@@ -13,6 +13,7 @@
 | v0.4 | UI 改版：侧边栏仪表盘 | [计划视图](screenshots/v0.4-dashboard-plan.png) · [统计视图](screenshots/v0.4-dashboard-stats.png) |
 | v0.5 | 新增学习仓库（笔记模块） | [计划视图](screenshots/v0.5-plan.png) · [笔记视图](screenshots/v0.5-notes.png) |
 | v0.6 | 学习仓库重做：改为文件仓库（上传/预览/下载） | [计划视图](screenshots/v0.6-plan.png) · [仓库视图](screenshots/v0.6-repo.png) |
+| v0.7 | 接入 Supabase 云端后端（任务/文件云同步） | [计划视图](screenshots/v0.7-plan.png) · [仓库视图](screenshots/v0.7-repo.png) |
 
 ---
 
@@ -106,6 +107,32 @@
 - 存储方案：文件内容（Blob）存 **IndexedDB**（localStorage 存不下大文件），元信息仍走 localStorage；v0.5 的 notes 旧数据自动忽略
 
 ![v0.6 仓库视图](screenshots/v0.6-repo.png)
+
+---
+
+## v0.7 — 接入 Supabase 云端后端
+
+**动机**：v0.6 的文件存在浏览器 IndexedDB，清缓存/换设备就丢。黑客松演示可能换电脑，需要真正的"记忆"——云端持久化。
+
+**改动**：
+- 接入 **Supabase**（PostgreSQL + Storage）：任务和文件元数据存数据库表，文件内容存 Storage 存储桶
+- 同步策略：**本地优先**——localStorage 秒开首屏，后台拉取云端数据（云端为准）；每次变更同时写本地和云端，断网也能用
+- 首次接入自动迁移：本地旧数据（任务、v0.6 的文件）自动上传云端，用户无感
+- 并发防护：云端写操作串行队列化（upsert 与 delete 交错会互相覆盖，开发期实测踩过这个坑）
+- 降级设计：未配置 Supabase 环境变量时自动退化为纯本地模式
+- 建表脚本沉淀为 [supabase-setup.sql](supabase-setup.sql)，一键复现后端
+
+**架构**：
+
+```
+浏览器 React 状态
+   ├─ localStorage（首屏缓存，秒开）
+   └─ Supabase（云端真实来源）
+        ├─ tasks / repo_files 表（元数据）
+        └─ repo-files 存储桶（文件内容）
+```
+
+![v0.7 仓库视图](screenshots/v0.7-repo.png)
 
 ---
 
