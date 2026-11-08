@@ -1,6 +1,6 @@
 "use client";
 
-export type View = "plan" | "stats";
+export type View = "plan" | "notes" | "stats";
 
 interface Props {
   view: View;
@@ -10,6 +10,7 @@ interface Props {
 
 const NAV_ITEMS: { key: View; label: string; icon: string }[] = [
   { key: "plan", label: "学习计划", icon: "📋" },
+  { key: "notes", label: "学习仓库", icon: "📚" },
   { key: "stats", label: "数据统计", icon: "📊" },
 ];
 

@@ -2,11 +2,11 @@
 
 import { useEffect, useState } from "react";
 import { detectPriority } from "./priority";
-import type { AppState, Task } from "./types";
+import type { AppState, Note, Task } from "./types";
 
 const STORAGE_KEY = "studyflow-state-v1";
 
-const initialState: AppState = { tasks: [] };
+const initialState: AppState = { tasks: [], notes: [] };
 
 /** 兼容旧版本数据：补默认字段、剔除废弃字段 */
 function normalize(raw: unknown): AppState {
@@ -14,7 +14,21 @@ function normalize(raw: unknown): AppState {
   const tasks = Array.isArray((raw as { tasks?: unknown }).tasks)
     ? ((raw as { tasks: unknown[] }).tasks as Partial<Task>[])
     : [];
+  const notes = Array.isArray((raw as { notes?: unknown }).notes)
+    ? ((raw as { notes: unknown[] }).notes as Partial<Note>[])
+    : [];
   return {
+    notes: notes
+      .filter((n) => n && typeof n.id === "string")
+      .map((n) => ({
+        id: n.id as string,
+        title: typeof n.title === "string" ? n.title : "",
+        subject: typeof n.subject === "string" ? n.subject : "通用",
+        content: typeof n.content === "string" ? n.content : "",
+        pinned: Boolean(n.pinned),
+        createdAt: typeof n.createdAt === "number" ? n.createdAt : Date.now(),
+        updatedAt: typeof n.updatedAt === "number" ? n.updatedAt : Date.now(),
+      })),
     tasks: tasks
       .filter((t) => t && typeof t.id === "string" && typeof t.title === "string")
       .map((t) => ({

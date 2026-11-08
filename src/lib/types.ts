@@ -14,8 +14,19 @@ export interface Task {
   completedAt?: number;
 }
 
+export interface Note {
+  id: string;
+  title: string;
+  subject: string;
+  content: string;
+  pinned: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface AppState {
   tasks: Task[];
+  notes: Note[];
 }
 
 export function todayKey(d = new Date()): string {
