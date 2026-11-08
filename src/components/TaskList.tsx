@@ -1,7 +1,8 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { todayKey, uid, type Task } from "@/lib/types";
+import { detectPriority, PRIORITY_META } from "@/lib/priority";
+import { daysUntil, todayKey, uid, type Task } from "@/lib/types";
 
 interface Props {
   tasks: Task[];
@@ -25,17 +26,17 @@ function subjectColor(subject: string): string {
   return SUBJECT_COLORS[h % SUBJECT_COLORS.length];
 }
 
-function daysUntil(deadline: string): number {
-  const today = new Date(todayKey());
-  const due = new Date(deadline);
-  return Math.round((due.getTime() - today.getTime()) / 86400000);
-}
-
 export default function TaskList({ tasks, onAdd, onToggle, onDelete }: Props) {
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
-  const [estimate, setEstimate] = useState(2);
+  const [estimateHours, setEstimateHours] = useState(1);
   const [deadline, setDeadline] = useState(todayKey());
+
+  // 添加表单里实时预览智能识别结果
+  const previewPriority = useMemo(
+    () => (title.trim() ? detectPriority(title + subject, deadline, estimateHours) : null),
+    [title, subject, deadline, estimateHours]
+  );
 
   function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -44,46 +45,42 @@ export default function TaskList({ tasks, onAdd, onToggle, onDelete }: Props) {
       id: uid(),
       title: title.trim(),
       subject: subject.trim() || "通用",
-      estimate: Math.max(1, estimate),
-      donePomodoros: 0,
-      focusSeconds: 0,
+      estimateHours: Math.max(1, estimateHours),
+      priority: detectPriority(title + subject, deadline, estimateHours),
       done: false,
       deadline,
       createdAt: Date.now(),
     });
     setTitle("");
     setSubject("");
-    setEstimate(2);
+    setEstimateHours(1);
   }
 
-  // 智能排序：未完成在前；紧急程度 = 剩余天数 / 剩余番茄数，越小越急
+  // 排序：未完成在前；优先级 高>中>低；同级按截止日近的在前
   const sorted = useMemo(() => {
     return [...tasks].sort((a, b) => {
       if (a.done !== b.done) return a.done ? 1 : -1;
-      const urgency = (t: Task) => {
-        const remain = Math.max(1, t.estimate - t.donePomodoros);
-        const days = Math.max(0, daysUntil(t.deadline));
-        return (days + 1) / remain;
-      };
-      return urgency(a) - urgency(b);
+      const w = PRIORITY_META[a.priority].weight - PRIORITY_META[b.priority].weight;
+      if (w !== 0) return w;
+      return daysUntil(a.deadline) - daysUntil(b.deadline);
     });
   }, [tasks]);
 
-  // 今日建议：最紧急的未完成任务
+  // 今日建议：排在最前面的未完成任务
   const suggestion = sorted.find((t) => !t.done);
 
   return (
     <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
       <div className="mb-4 flex items-center justify-between">
         <h2 className="text-lg font-semibold text-slate-800">学习计划</h2>
-        <span className="text-xs text-slate-400">按紧急程度智能排序</span>
+        <span className="text-xs text-slate-400">智能识别优先级并排序</span>
       </div>
 
-      <form onSubmit={submit} className="mb-5 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_120px_90px_130px_auto]">
+      <form onSubmit={submit} className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_120px_90px_130px_auto]">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
-          placeholder="要学什么？例如：高数第三章习题"
+          placeholder="要学什么？例如：准备期末考试"
           className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none"
         />
         <input
@@ -95,10 +92,10 @@ export default function TaskList({ tasks, onAdd, onToggle, onDelete }: Props) {
         <input
           type="number"
           min={1}
-          max={20}
-          value={estimate}
-          onChange={(e) => setEstimate(Number(e.target.value))}
-          title="预计番茄钟数"
+          max={40}
+          value={estimateHours}
+          onChange={(e) => setEstimateHours(Number(e.target.value))}
+          title="预计小时数"
           className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none"
         />
         <input
@@ -115,10 +112,23 @@ export default function TaskList({ tasks, onAdd, onToggle, onDelete }: Props) {
         </button>
       </form>
 
+      {previewPriority && (
+        <p className="mb-3 text-xs text-slate-400">
+          🤖 智能识别：该任务优先级为
+          <span className={`ml-1 rounded-full px-2 py-0.5 font-medium ring-1 ${PRIORITY_META[previewPriority].badge}`}>
+            {PRIORITY_META[previewPriority].label}
+          </span>
+        </p>
+      )}
+
       {suggestion && (
         <div className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
-          💡 建议优先完成「{suggestion.title}」——还剩 {Math.max(1, suggestion.estimate - suggestion.donePomodoros)} 个番茄，
-          {daysUntil(suggestion.deadline) <= 0 ? "今天就是截止日！" : `距离截止还有 ${daysUntil(suggestion.deadline)} 天。`}
+          💡 建议优先完成「{suggestion.title}」（{PRIORITY_META[suggestion.priority].label}优先级）——
+          {daysUntil(suggestion.deadline) < 0
+            ? `已逾期 ${-daysUntil(suggestion.deadline)} 天，尽快处理！`
+            : daysUntil(suggestion.deadline) === 0
+              ? "今天就是截止日！"
+              : `距离截止还有 ${daysUntil(suggestion.deadline)} 天。`}
         </div>
       )}
 
@@ -130,6 +140,7 @@ export default function TaskList({ tasks, onAdd, onToggle, onDelete }: Props) {
         )}
         {sorted.map((t) => {
           const d = daysUntil(t.deadline);
+          const meta = PRIORITY_META[t.priority];
           return (
             <li
               key={t.id}
@@ -148,11 +159,12 @@ export default function TaskList({ tasks, onAdd, onToggle, onDelete }: Props) {
                   {t.title}
                 </p>
                 <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                  <span className={`rounded-full px-2 py-0.5 font-medium ${subjectColor(t.subject)}`}>{t.subject}</span>
-                  <span className="text-slate-400">
-                    🍅 {t.donePomodoros}/{t.estimate}
+                  <span className={`rounded-full px-2 py-0.5 font-medium ring-1 ${meta.badge}`}>
+                    {meta.label}优先级
                   </span>
-                  <span className={d < 0 && !t.done ? "font-medium text-rose-600" : "text-slate-400"}>
+                  <span className={`rounded-full px-2 py-0.5 font-medium ${subjectColor(t.subject)}`}>{t.subject}</span>
+                  <span className="text-slate-400">约 {t.estimateHours} 小时</span>
+                  <span className={d <= 0 && !t.done ? "font-medium text-rose-600" : "text-slate-400"}>
                     {t.done
                       ? "已完成"
                       : d < 0
@@ -161,15 +173,6 @@ export default function TaskList({ tasks, onAdd, onToggle, onDelete }: Props) {
                           ? "今天截止"
                           : `${d} 天后截止`}
                   </span>
-                </div>
-              </div>
-              {/* 进度条 */}
-              <div className="hidden w-24 sm:block">
-                <div className="h-1.5 overflow-hidden rounded-full bg-slate-200">
-                  <div
-                    className="h-full rounded-full bg-indigo-500 transition-all"
-                    style={{ width: `${Math.min(100, (t.donePomodoros / t.estimate) * 100)}%` }}
-                  />
                 </div>
               </div>
               <button

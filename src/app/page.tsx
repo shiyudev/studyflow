@@ -2,10 +2,9 @@
 
 import { useCallback } from "react";
 import TaskList from "@/components/TaskList";
-import Timer from "@/components/Timer";
 import StatsPanel from "@/components/StatsPanel";
 import { useAppState } from "@/lib/store";
-import { todayKey, type Task } from "@/lib/types";
+import type { Task } from "@/lib/types";
 
 export default function Home() {
   const [state, setState, hydrated] = useAppState();
@@ -30,22 +29,6 @@ export default function Home() {
 
   const deleteTask = useCallback(
     (id: string) => setState((s) => ({ ...s, tasks: s.tasks.filter((t) => t.id !== id) })),
-    [setState]
-  );
-
-  const handleFocusComplete = useCallback(
-    (taskId: string | null, seconds: number) =>
-      setState((s) => {
-        const key = todayKey();
-        return {
-          tasks: s.tasks.map((t) =>
-            t.id === taskId
-              ? { ...t, donePomodoros: t.donePomodoros + 1, focusSeconds: t.focusSeconds + seconds }
-              : t
-          ),
-          focusLog: { ...s.focusLog, [key]: (s.focusLog[key] ?? 0) + seconds },
-        };
-      }),
     [setState]
   );
 
@@ -77,7 +60,6 @@ export default function Home() {
           <TaskList tasks={state.tasks} onAdd={addTask} onToggle={toggleTask} onDelete={deleteTask} />
         </div>
         <div className="space-y-6">
-          <Timer tasks={state.tasks} onFocusComplete={handleFocusComplete} />
           <StatsPanel state={state} />
         </div>
       </main>
