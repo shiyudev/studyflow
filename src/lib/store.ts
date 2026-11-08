@@ -1,7 +1,9 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { detectPriority } from "./priority";
+import { fetchRemoteState, pushRemoteState } from "./remote";
+import { hasBackend } from "./supabase";
 import type { AppState, RepoFile, Task } from "./types";
 
 const STORAGE_KEY = "studyflow-state-v1";
@@ -52,28 +54,59 @@ function normalize(raw: unknown): AppState {
 }
 
 /**
- * 把应用状态持久化到 localStorage。
- * 黑客松 MVP 阶段不接后端，刷新/重开页面数据不丢。
+ * 应用状态持久化（v0.7 起）：
+ * 1. localStorage 秒开（首屏不等待网络）；
+ * 2. 后台拉取 Supabase 云端数据，云端为准；
+ * 3. 每次变更同时写 localStorage 和云端（写云端失败不影响本地，离线可用）；
+ * 4. 首次接入时，若云端为空而本地有数据，自动把本地数据迁移上云。
  */
 export function useAppState(): [AppState, React.Dispatch<React.SetStateAction<AppState>>, boolean] {
   const [state, setState] = useState<AppState>(initialState);
   const [hydrated, setHydrated] = useState(false);
+  // 云端首次拉取完成后才允许回写，避免用旧本地数据覆盖云端
+  const remoteReady = useRef(!hasBackend);
 
   useEffect(() => {
+    let local = initialState;
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
       if (raw) {
-        setState(normalize(JSON.parse(raw)));
+        local = normalize(JSON.parse(raw));
+        setState(local);
       }
     } catch {
       // 忽略损坏数据
     }
     setHydrated(true);
+
+    if (!hasBackend) return;
+    let cancelled = false;
+    (async () => {
+      const remote = await fetchRemoteState();
+      if (cancelled) return;
+      if (remote) {
+        const remoteEmpty = remote.tasks.length === 0 && remote.files.length === 0;
+        const localHasData = local.tasks.length > 0 || local.files.length > 0;
+        if (remoteEmpty && localHasData) {
+          // 首次接入：把本地数据迁移上云，界面保持本地数据不变
+          await pushRemoteState(local);
+        } else {
+          setState(remote);
+        }
+      }
+      remoteReady.current = true;
+    })();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   useEffect(() => {
     if (!hydrated) return;
     localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+    if (remoteReady.current) {
+      pushRemoteState(state);
+    }
   }, [state, hydrated]);
 
   return [state, setState, hydrated];

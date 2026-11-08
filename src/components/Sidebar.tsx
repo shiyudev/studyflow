@@ -60,9 +60,9 @@ export default function Sidebar({ view, onChange, pendingCount }: Props) {
 
         <div className="border-t border-slate-100 px-5 py-4">
           <p className="text-[11px] leading-relaxed text-slate-400">
-            💾 数据保存在本地浏览器
+            ☁️ 数据已云端同步（Supabase）
             <br />
-            清除缓存前记得截图备份
+            换设备打开也能看到同一份数据
           </p>
         </div>
       </aside>
