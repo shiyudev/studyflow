@@ -48,9 +48,6 @@ export default function Home() {
 
   const pendingCount = useMemo(() => state.tasks.filter((t) => !t.done).length, [state.tasks]);
 
-  const now = new Date();
-  const dateLabel = `${now.getMonth() + 1}月${now.getDate()}日 星期${WEEKDAYS[now.getDay()]}`;
-
   if (!hydrated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100">
@@ -58,6 +55,11 @@ export default function Home() {
       </div>
     );
   }
+
+  // 注意：必须在 hydrated 之后读取当前时间。
+  // 开启 Cache Components 后，预渲染阶段读取 new Date() 会报错。
+  const now = new Date();
+  const dateLabel = `${now.getMonth() + 1}月${now.getDate()}日 星期${WEEKDAYS[now.getDay()]}`;
 
   return (
     <div className="flex min-h-screen bg-slate-100">
