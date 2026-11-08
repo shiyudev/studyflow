@@ -1,13 +1,27 @@
 "use client";
 
-import { useCallback } from "react";
+import { useCallback, useMemo, useState } from "react";
 import TaskList from "@/components/TaskList";
 import StatsPanel from "@/components/StatsPanel";
+import Sidebar, { type View } from "@/components/Sidebar";
 import { useAppState } from "@/lib/store";
 import type { Task } from "@/lib/types";
 
+const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
+
+function greeting(): string {
+  const h = new Date().getHours();
+  if (h < 6) return "夜深了";
+  if (h < 9) return "早上好";
+  if (h < 12) return "上午好";
+  if (h < 14) return "中午好";
+  if (h < 18) return "下午好";
+  return "晚上好";
+}
+
 export default function Home() {
   const [state, setState, hydrated] = useAppState();
+  const [view, setView] = useState<View>("plan");
 
   const addTask = useCallback(
     (task: Task) => setState((s) => ({ ...s, tasks: [...s.tasks, task] })),
@@ -32,6 +46,11 @@ export default function Home() {
     [setState]
   );
 
+  const pendingCount = useMemo(() => state.tasks.filter((t) => !t.done).length, [state.tasks]);
+
+  const now = new Date();
+  const dateLabel = `${now.getMonth() + 1}月${now.getDate()}日 星期${WEEKDAYS[now.getDay()]}`;
+
   if (!hydrated) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-slate-100">
@@ -41,28 +60,35 @@ export default function Home() {
   }
 
   return (
-    <div className="min-h-screen bg-slate-100">
-      <header className="border-b border-slate-200 bg-white">
-        <div className="mx-auto flex max-w-5xl items-center justify-between px-4 py-4">
-          <div className="flex items-center gap-2">
-            <span className="text-2xl">🎯</span>
-            <div>
-              <h1 className="text-xl font-bold text-slate-900">StudyFlow</h1>
-              <p className="text-xs text-slate-400">你的智能学习搭子</p>
-            </div>
-          </div>
-          <span className="text-xs text-slate-400">数据保存在本地浏览器</span>
-        </div>
-      </header>
+    <div className="flex min-h-screen bg-slate-100">
+      <Sidebar view={view} onChange={setView} pendingCount={pendingCount} />
 
-      <main className="mx-auto grid max-w-5xl grid-cols-1 gap-6 px-4 py-6 lg:grid-cols-[1fr_380px]">
-        <div className="space-y-6">
-          <TaskList tasks={state.tasks} onAdd={addTask} onToggle={toggleTask} onDelete={deleteTask} />
+      <div className="min-w-0 flex-1">
+        {/* 移动端品牌栏 */}
+        <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-4 py-3 md:hidden">
+          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-sm text-white">🎯</span>
+          <p className="text-sm font-bold text-slate-900">StudyFlow</p>
         </div>
-        <div className="space-y-6">
-          <StatsPanel state={state} />
-        </div>
-      </main>
+
+        <main className="mx-auto max-w-4xl px-4 py-6 sm:px-8">
+          {/* 页头 */}
+          <header className="mb-6">
+            <h1 className="text-2xl font-bold text-slate-900">
+              {greeting()}，同学 👋
+            </h1>
+            <p className="mt-1 text-sm text-slate-500">
+              今天是 {dateLabel}
+              {pendingCount > 0 ? `，还有 ${pendingCount} 个任务待完成` : "，任务已全部完成，太棒了！"}
+            </p>
+          </header>
+
+          {view === "plan" ? (
+            <TaskList tasks={state.tasks} onAdd={addTask} onToggle={toggleTask} onDelete={deleteTask} />
+          ) : (
+            <StatsPanel state={state} />
+          )}
+        </main>
+      </div>
     </div>
   );
 }

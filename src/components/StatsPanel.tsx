@@ -53,34 +53,41 @@ export default function StatsPanel({ state }: { state: AppState }) {
         </div>
       </div>
 
-      {/* 待办任务优先级分布 */}
-      <p className="mb-2 text-xs font-medium text-slate-500">待办优先级分布</p>
-      <div className="mb-5 flex gap-2">
-        {(Object.keys(PRIORITY_META) as Priority[]).map((p) => (
-          <div
-            key={p}
-            className={`flex-1 rounded-lg py-2 text-center ring-1 ${PRIORITY_META[p].badge}`}
-          >
-            <p className="text-base font-bold">{stats.byPriority[p]}</p>
-            <p className="text-[10px]">{PRIORITY_META[p].label}优先级</p>
+      <div className="grid gap-6 sm:grid-cols-2">
+        {/* 待办任务优先级分布 */}
+        <div>
+          <p className="mb-2 text-xs font-medium text-slate-500">待办优先级分布</p>
+          <div className="flex gap-2">
+            {(Object.keys(PRIORITY_META) as Priority[]).map((p) => (
+              <div
+                key={p}
+                className={`flex-1 rounded-lg py-3 text-center ring-1 ${PRIORITY_META[p].badge}`}
+              >
+                <p className="text-lg font-bold">{stats.byPriority[p]}</p>
+                <p className="text-[10px]">{PRIORITY_META[p].label}优先级</p>
+              </div>
+            ))}
           </div>
-        ))}
-      </div>
+        </div>
 
-      <p className="mb-2 text-xs font-medium text-slate-500">近 7 天完成任务数</p>
-      <div className="flex h-28 items-end gap-2">
-        {stats.week.map((w) => (
-          <div key={w.label} className="flex flex-1 flex-col items-center gap-1">
-            <div
-              className={`w-full rounded-t-md transition-all ${w.isToday ? "bg-emerald-400" : "bg-indigo-300"}`}
-              style={{ height: `${Math.max(w.count > 0 ? 8 : 2, (w.count / maxCount) * 88)}px` }}
-              title={`${w.count} 个任务`}
-            />
-            <span className={`text-[10px] ${w.isToday ? "font-semibold text-emerald-600" : "text-slate-400"}`}>
-              {w.label}
-            </span>
+        {/* 近 7 天完成任务数 */}
+        <div>
+          <p className="mb-2 text-xs font-medium text-slate-500">近 7 天完成任务数</p>
+          <div className="flex h-28 items-end gap-2">
+            {stats.week.map((w) => (
+              <div key={w.label} className="flex flex-1 flex-col items-center gap-1">
+                <div
+                  className={`w-full rounded-t-md transition-all ${w.isToday ? "bg-emerald-400" : "bg-indigo-300"}`}
+                  style={{ height: `${Math.max(w.count > 0 ? 8 : 2, (w.count / maxCount) * 88)}px` }}
+                  title={`${w.count} 个任务`}
+                />
+                <span className={`text-[10px] ${w.isToday ? "font-semibold text-emerald-600" : "text-slate-400"}`}>
+                  {w.label}
+                </span>
+              </div>
+            ))}
           </div>
-        ))}
+        </div>
       </div>
     </section>
   );
