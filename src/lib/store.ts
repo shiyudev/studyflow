@@ -23,6 +23,7 @@ function normalize(raw: unknown): AppState {
       .map((f) => ({
         id: f.id as string,
         name: f.name as string,
+        path: typeof f.path === "string" && f.path ? f.path : undefined,
         subject: typeof f.subject === "string" ? f.subject : "通用",
         mimeType: typeof f.mimeType === "string" ? f.mimeType : "",
         size: typeof f.size === "number" ? f.size : 0,

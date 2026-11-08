@@ -11,6 +11,12 @@ interface Props {
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
+/** 待上传的文件：file 为内容，path 为相对路径（单文件时为空串） */
+interface UploadItem {
+  file: File;
+  path: string;
+}
+
 const SUBJECT_COLORS = [
   "bg-blue-100 text-blue-700",
   "bg-violet-100 text-violet-700",
@@ -24,6 +30,15 @@ function subjectColor(subject: string): string {
   let h = 0;
   for (const ch of subject) h = (h * 31 + ch.charCodeAt(0)) % 997;
   return SUBJECT_COLORS[h % SUBJECT_COLORS.length];
+}
+
+/** 科目推断：用户手填了科目就用手填的；否则文件夹上传时取顶层目录名 */
+function inferSubject(path: string, manual: string): string {
+  const m = manual.trim();
+  if (m && m !== "通用") return m;
+  const topDir = path.split("/").filter(Boolean)[0];
+  if (topDir && path.includes("/")) return topDir;
+  return m || "通用";
 }
 
 function fileIcon(f: RepoFile): string {
@@ -65,6 +80,35 @@ interface Preview {
   text: string | null;
 }
 
+/** 递归读取拖拽进来的文件系统条目（支持目录） */
+async function readEntry(entry: FileSystemEntry, path: string): Promise<UploadItem[]> {
+  if (entry.isFile) {
+    const file = await new Promise<File>((resolve, reject) =>
+      (entry as FileSystemFileEntry).file(resolve, reject)
+    );
+    return [{ file, path: path + file.name }];
+  }
+  if (entry.isDirectory) {
+    const reader = (entry as FileSystemDirectoryEntry).createReader();
+    // readEntries 每次最多返回 100 条，需循环读完
+    const entries: FileSystemEntry[] = [];
+    let batch = await new Promise<FileSystemEntry[]>((resolve, reject) =>
+      reader.readEntries(resolve, reject)
+    );
+    while (batch.length > 0) {
+      entries.push(...batch);
+      batch = await new Promise<FileSystemEntry[]>((resolve, reject) =>
+        reader.readEntries(resolve, reject)
+      );
+    }
+    const nested = await Promise.all(
+      entries.map((e) => readEntry(e, `${path}${entry.name}/`))
+    );
+    return nested.flat();
+  }
+  return [];
+}
+
 export default function RepoView({ files, onChange }: Props) {
   const [search, setSearch] = useState("");
   const [uploadSubject, setUploadSubject] = useState("通用");
@@ -74,6 +118,7 @@ export default function RepoView({ files, onChange }: Props) {
   const [dragOver, setDragOver] = useState(false);
   const [editingSubjectId, setEditingSubjectId] = useState<string | null>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const folderInputRef = useRef<HTMLInputElement | null>(null);
 
   const active = files.find((f) => f.id === activeId) ?? null;
 
@@ -117,30 +162,32 @@ export default function RepoView({ files, onChange }: Props) {
       ? files.filter(
           (f) =>
             f.name.toLowerCase().includes(q) ||
+            (f.path ?? "").toLowerCase().includes(q) ||
             f.subject.toLowerCase().includes(q)
         )
       : files;
     return [...list].sort((a, b) => b.createdAt - a.createdAt);
   }, [files, search]);
 
-  async function addFiles(fileList: FileList | File[]) {
+  async function addFiles(items: UploadItem[]) {
     const next: RepoFile[] = [];
-    for (const file of Array.from(fileList)) {
+    for (const { file, path } of items) {
       if (file.size > MAX_FILE_SIZE) {
-        alert(`「${file.name}」超过 50MB，暂不支持存储`);
+        alert(`「${path || file.name}」超过 50MB，暂不支持存储`);
         continue;
       }
       const id = uid();
       try {
         await saveFileBlob(id, file);
       } catch {
-        alert(`「${file.name}」保存失败，浏览器存储空间可能不足`);
+        alert(`「${path || file.name}」保存失败，浏览器存储空间可能不足`);
         continue;
       }
       next.push({
         id,
         name: file.name,
-        subject: uploadSubject.trim() || "通用",
+        path: path || undefined,
+        subject: inferSubject(path, uploadSubject),
         mimeType: file.type,
         size: file.size,
         createdAt: Date.now(),
@@ -152,10 +199,26 @@ export default function RepoView({ files, onChange }: Props) {
     }
   }
 
+  async function handleDrop(e: React.DragEvent) {
+    e.preventDefault();
+    setDragOver(false);
+    const entries = Array.from(e.dataTransfer.items)
+      .map((item) => item.webkitGetAsEntry())
+      .filter((en): en is FileSystemEntry => en !== null);
+    if (entries.length > 0) {
+      const nested = await Promise.all(entries.map((en) => readEntry(en, "")));
+      await addFiles(nested.flat());
+    } else if (e.dataTransfer.files.length > 0) {
+      await addFiles(
+        Array.from(e.dataTransfer.files).map((file) => ({ file, path: "" }))
+      );
+    }
+  }
+
   async function removeFile(id: string) {
     const target = files.find((f) => f.id === id);
     if (!target) return;
-    if (!confirm(`确定删除「${target.name}」吗？`)) return;
+    if (!confirm(`确定删除「${target.path || target.name}」吗？`)) return;
     await deleteFileBlob(id).catch(() => {});
     onChange(files.filter((f) => f.id !== id));
     if (activeId === id) setActiveId(null);
@@ -195,26 +258,29 @@ export default function RepoView({ files, onChange }: Props) {
           setDragOver(true);
         }}
         onDragLeave={() => setDragOver(false)}
-        onDrop={(e) => {
-          e.preventDefault();
-          setDragOver(false);
-          if (e.dataTransfer.files.length > 0) addFiles(e.dataTransfer.files);
-        }}
+        onDrop={handleDrop}
         className={`rounded-2xl border-2 border-dashed p-6 text-center transition-colors ${
           dragOver ? "border-indigo-400 bg-indigo-50" : "border-slate-300 bg-white"
         }`}
       >
         <p className="text-sm text-slate-500">
-          把笔记文件拖到这里，或
+          把文件或整个文件夹拖到这里，或
           <button
             onClick={() => inputRef.current?.click()}
             className="mx-1 font-medium text-indigo-600 hover:underline"
           >
-            点击选择文件
+            选择文件
+          </button>
+          /
+          <button
+            onClick={() => folderInputRef.current?.click()}
+            className="mx-1 font-medium text-indigo-600 hover:underline"
+          >
+            选择文件夹
           </button>
         </p>
         <p className="mt-1 text-xs text-slate-400">
-          支持 PDF / Markdown / Word / 图片等任意文件，单个不超过 50MB，文件保存在本机浏览器中
+          支持 PDF / Markdown / Word / 图片等任意文件，单个不超过 50MB；文件夹会保留目录结构，文件夹名自动作为科目
         </p>
         <div className="mt-3 flex items-center justify-center gap-2 text-sm">
           <span className="text-slate-400">归入科目</span>
@@ -231,7 +297,30 @@ export default function RepoView({ files, onChange }: Props) {
           multiple
           className="hidden"
           onChange={(e) => {
-            if (e.target.files) addFiles(e.target.files);
+            if (e.target.files) {
+              addFiles(Array.from(e.target.files).map((file) => ({ file, path: "" })));
+            }
+            e.target.value = "";
+          }}
+        />
+        <input
+          ref={(el) => {
+            folderInputRef.current = el;
+            // React 不认识 webkitdirectory 属性，手动挂载以支持选择文件夹
+            el?.setAttribute("webkitdirectory", "");
+          }}
+          type="file"
+          multiple
+          className="hidden"
+          onChange={(e) => {
+            if (e.target.files) {
+              addFiles(
+                Array.from(e.target.files).map((file) => ({
+                  file,
+                  path: file.webkitRelativePath || "",
+                }))
+              );
+            }
             e.target.value = "";
           }}
         />
@@ -243,7 +332,7 @@ export default function RepoView({ files, onChange }: Props) {
           <input
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="🔍 搜索文件名或科目…"
+            placeholder="🔍 搜索文件名、路径或科目…"
             className="mb-3 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-400"
           />
           {filtered.length === 0 ? (
@@ -266,6 +355,9 @@ export default function RepoView({ files, onChange }: Props) {
                     <span className="text-xl leading-none">{fileIcon(f)}</span>
                     <div className="min-w-0 flex-1">
                       <p className="truncate text-sm font-medium text-slate-800">{f.name}</p>
+                      {f.path && f.path.includes("/") && (
+                        <p className="truncate text-[11px] text-slate-400">📁 {f.path}</p>
+                      )}
                       <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
                         {editingSubjectId === f.id ? (
                           <input
@@ -335,7 +427,7 @@ export default function RepoView({ files, onChange }: Props) {
             <div className="flex h-full flex-col">
               <div className="mb-3 flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
                 <p className="truncate text-sm font-medium text-slate-800">
-                  {fileIcon(active)} {active.name}
+                  {fileIcon(active)} {active.path || active.name}
                 </p>
                 <button
                   onClick={() => downloadFile(active)}

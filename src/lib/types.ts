@@ -17,8 +17,10 @@ export interface Task {
 /** 学习仓库中的文件元信息；文件内容（Blob）存放在 IndexedDB */
 export interface RepoFile {
   id: string;
-  /** 原始文件名 */
+  /** 原始文件名（不含目录） */
   name: string;
+  /** 相对路径，如 "高数笔记/第三章.md"；单文件上传时为空 */
+  path?: string;
   subject: string;
   mimeType: string;
   /** 字节数 */
