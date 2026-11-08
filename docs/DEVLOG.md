@@ -11,6 +11,7 @@
 | v0.2 | 移除番茄钟，新增智能优先级识别 | [查看](screenshots/v0.2-priority.png) |
 | v0.3 | 移除预计工作量，截止时间精确到分 | [查看](screenshots/v0.3-deadline-time.png) |
 | v0.4 | UI 改版：侧边栏仪表盘 | [计划视图](screenshots/v0.4-dashboard-plan.png) · [统计视图](screenshots/v0.4-dashboard-stats.png) |
+| v0.5 | 新增学习仓库（笔记模块） | [计划视图](screenshots/v0.5-plan.png) · [笔记视图](screenshots/v0.5-notes.png) |
 
 ---
 
@@ -73,6 +74,21 @@
 
 ![v0.4 计划视图](screenshots/v0.4-dashboard-plan.png)
 ![v0.4 统计视图](screenshots/v0.4-dashboard-stats.png)
+
+---
+
+## v0.5 — 新增学习仓库（笔记模块）
+
+**动机**：学习计划解决"做什么"，但学习过程中产生的笔记、知识点总结没地方放。"计划 + 仓库"构成完整的学习闭环。
+
+**改动**：
+- 新增「学习仓库」视图（侧边栏第三个入口 📚）
+- 笔记增删改查：标题 / 科目分类 / 多行正文，输入即自动保存（无需手动点保存）
+- 全文搜索（标题 / 正文 / 科目）+ 置顶 + 按更新时间倒序
+- 双栏布局：左侧笔记列表（科目标签、更新时间），右侧编辑器（字数统计、置顶、删除）
+- 数据模型新增 `Note`，localStorage 旧数据自动迁移兼容
+
+![v0.5 笔记视图](screenshots/v0.5-notes.png)
 
 ---
 
