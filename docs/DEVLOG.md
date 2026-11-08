@@ -12,6 +12,7 @@
 | v0.3 | 移除预计工作量，截止时间精确到分 | [查看](screenshots/v0.3-deadline-time.png) |
 | v0.4 | UI 改版：侧边栏仪表盘 | [计划视图](screenshots/v0.4-dashboard-plan.png) · [统计视图](screenshots/v0.4-dashboard-stats.png) |
 | v0.5 | 新增学习仓库（笔记模块） | [计划视图](screenshots/v0.5-plan.png) · [笔记视图](screenshots/v0.5-notes.png) |
+| v0.6 | 学习仓库重做：改为文件仓库（上传/预览/下载） | [计划视图](screenshots/v0.6-plan.png) · [仓库视图](screenshots/v0.6-repo.png) |
 
 ---
 
@@ -89,6 +90,21 @@
 - 数据模型新增 `Note`，localStorage 旧数据自动迁移兼容
 
 ![v0.5 笔记视图](screenshots/v0.5-notes.png)
+
+---
+
+## v0.6 — 学习仓库重做：改为文件仓库
+
+**动机**：v0.5 上线后收到真实反馈——用户要的不是在网页里手写笔记，而是一个**仓库**：把自己已有的笔记文件（PDF、Markdown、错题照片等）存进去，随取随用。这是一次典型的"按用户反馈推翻重做"。
+
+**改动**：
+- 移除 v0.5 的网页笔记编辑器，学习仓库改为**文件仓库**
+- 支持拖拽 / 点选上传任意文件（单个 ≤50MB），上传时可归入科目
+- 在线预览：图片、Markdown/纯文本、PDF；其他类型（Word 等）可下载后查看
+- 文件列表：类型图标、科目分类（点击可改）、大小、日期、搜索、下载、删除
+- 存储方案：文件内容（Blob）存 **IndexedDB**（localStorage 存不下大文件），元信息仍走 localStorage；v0.5 的 notes 旧数据自动忽略
+
+![v0.6 仓库视图](screenshots/v0.6-repo.png)
 
 ---
 
