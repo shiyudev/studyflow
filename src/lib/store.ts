@@ -2,32 +2,31 @@
 
 import { useEffect, useState } from "react";
 import { detectPriority } from "./priority";
-import type { AppState, Note, Task } from "./types";
+import type { AppState, RepoFile, Task } from "./types";
 
 const STORAGE_KEY = "studyflow-state-v1";
 
-const initialState: AppState = { tasks: [], notes: [] };
+const initialState: AppState = { tasks: [], files: [] };
 
-/** 兼容旧版本数据：补默认字段、剔除废弃字段 */
+/** 兼容旧版本数据：补默认字段、剔除废弃字段（v0.5 的 notes 编辑器数据已废弃，自动忽略） */
 function normalize(raw: unknown): AppState {
   if (!raw || typeof raw !== "object") return initialState;
   const tasks = Array.isArray((raw as { tasks?: unknown }).tasks)
     ? ((raw as { tasks: unknown[] }).tasks as Partial<Task>[])
     : [];
-  const notes = Array.isArray((raw as { notes?: unknown }).notes)
-    ? ((raw as { notes: unknown[] }).notes as Partial<Note>[])
+  const files = Array.isArray((raw as { files?: unknown }).files)
+    ? ((raw as { files: unknown[] }).files as Partial<RepoFile>[])
     : [];
   return {
-    notes: notes
-      .filter((n) => n && typeof n.id === "string")
-      .map((n) => ({
-        id: n.id as string,
-        title: typeof n.title === "string" ? n.title : "",
-        subject: typeof n.subject === "string" ? n.subject : "通用",
-        content: typeof n.content === "string" ? n.content : "",
-        pinned: Boolean(n.pinned),
-        createdAt: typeof n.createdAt === "number" ? n.createdAt : Date.now(),
-        updatedAt: typeof n.updatedAt === "number" ? n.updatedAt : Date.now(),
+    files: files
+      .filter((f) => f && typeof f.id === "string" && typeof f.name === "string")
+      .map((f) => ({
+        id: f.id as string,
+        name: f.name as string,
+        subject: typeof f.subject === "string" ? f.subject : "通用",
+        mimeType: typeof f.mimeType === "string" ? f.mimeType : "",
+        size: typeof f.size === "number" ? f.size : 0,
+        createdAt: typeof f.createdAt === "number" ? f.createdAt : Date.now(),
       })),
     tasks: tasks
       .filter((t) => t && typeof t.id === "string" && typeof t.title === "string")

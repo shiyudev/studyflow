@@ -14,19 +14,21 @@ export interface Task {
   completedAt?: number;
 }
 
-export interface Note {
+/** 学习仓库中的文件元信息；文件内容（Blob）存放在 IndexedDB */
+export interface RepoFile {
   id: string;
-  title: string;
+  /** 原始文件名 */
+  name: string;
   subject: string;
-  content: string;
-  pinned: boolean;
+  mimeType: string;
+  /** 字节数 */
+  size: number;
   createdAt: number;
-  updatedAt: number;
 }
 
 export interface AppState {
   tasks: Task[];
-  notes: Note[];
+  files: RepoFile[];
 }
 
 export function todayKey(d = new Date()): string {

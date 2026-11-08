@@ -3,10 +3,10 @@
 import { useCallback, useMemo, useState } from "react";
 import TaskList from "@/components/TaskList";
 import StatsPanel from "@/components/StatsPanel";
-import NotesView from "@/components/NotesView";
+import RepoView from "@/components/RepoView";
 import Sidebar, { type View } from "@/components/Sidebar";
 import { useAppState } from "@/lib/store";
-import type { Note, Task } from "@/lib/types";
+import type { RepoFile, Task } from "@/lib/types";
 
 const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
 
@@ -47,8 +47,8 @@ export default function Home() {
     [setState]
   );
 
-  const setNotes = useCallback(
-    (notes: Note[]) => setState((s) => ({ ...s, notes })),
+  const setFiles = useCallback(
+    (files: RepoFile[]) => setState((s) => ({ ...s, files })),
     [setState]
   );
 
@@ -93,7 +93,7 @@ export default function Home() {
           {view === "plan" && (
             <TaskList tasks={state.tasks} onAdd={addTask} onToggle={toggleTask} onDelete={deleteTask} />
           )}
-          {view === "notes" && <NotesView notes={state.notes} onChange={setNotes} />}
+          {view === "repo" && <RepoView files={state.files} onChange={setFiles} />}
           {view === "stats" && <StatsPanel state={state} />}
         </main>
       </div>
