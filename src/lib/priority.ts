@@ -20,12 +20,11 @@ export const PRIORITY_META: Record<Priority, { label: string; badge: string; wei
 
 /**
  * 智能识别任务优先级。
- * 综合三个信号打分：
+ * 综合两个信号打分：
  *  1. 截止日远近（越近越紧急）
  *  2. 标题/科目关键词（考试、论文等 → 更重要）
- *  3. 预计工作量（大任务需要更早开始）
  */
-export function detectPriority(title: string, deadline: string, estimateHours: number): Priority {
+export function detectPriority(title: string, deadline: string): Priority {
   let score = 0;
 
   // 信号 1：截止日远近
@@ -40,9 +39,6 @@ export function detectPriority(title: string, deadline: string, estimateHours: n
   const text = title.toLowerCase();
   if (HIGH_KEYWORDS.some((k) => text.includes(k))) score += 2;
   else if (MEDIUM_KEYWORDS.some((k) => text.includes(k))) score += 1;
-
-  // 信号 3：工作量（>=3 小时的大任务加分）
-  if (estimateHours >= 3) score += 1;
 
   if (score >= 4) return "high";
   if (score >= 2) return "medium";

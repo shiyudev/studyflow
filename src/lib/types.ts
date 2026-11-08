@@ -4,11 +4,12 @@ export interface Task {
   id: string;
   title: string;
   subject: string;
-  /** 预计花费小时数 */
-  estimateHours: number;
   priority: Priority;
   done: boolean;
-  deadline: string; // YYYY-MM-DD
+  /** 截止日期 YYYY-MM-DD */
+  deadline: string;
+  /** 可选：截止时刻 HH:mm，不填则只精确到日 */
+  deadlineTime?: string;
   createdAt: number;
   completedAt?: number;
 }
@@ -28,6 +29,13 @@ export function daysUntil(deadline: string, from = new Date()): number {
   const base = new Date(todayKey(from));
   const due = new Date(deadline);
   return Math.round((due.getTime() - base.getTime()) / 86400000);
+}
+
+/** 格式化截止时间展示：有时刻则「X月X日 HH:mm」，否则只到日 */
+export function formatDeadline(task: Pick<Task, "deadline" | "deadlineTime">): string {
+  const [, m, d] = task.deadline.split("-");
+  const datePart = `${Number(m)}月${Number(d)}日`;
+  return task.deadlineTime ? `${datePart} ${task.deadlineTime}` : datePart;
 }
 
 export function uid(): string {

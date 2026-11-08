@@ -2,7 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { detectPriority, PRIORITY_META } from "@/lib/priority";
-import { daysUntil, todayKey, uid, type Task } from "@/lib/types";
+import { daysUntil, formatDeadline, todayKey, uid, type Task } from "@/lib/types";
 
 interface Props {
   tasks: Task[];
@@ -29,13 +29,13 @@ function subjectColor(subject: string): string {
 export default function TaskList({ tasks, onAdd, onToggle, onDelete }: Props) {
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
-  const [estimateHours, setEstimateHours] = useState(1);
   const [deadline, setDeadline] = useState(todayKey());
+  const [deadlineTime, setDeadlineTime] = useState("");
 
   // 添加表单里实时预览智能识别结果
   const previewPriority = useMemo(
-    () => (title.trim() ? detectPriority(title + subject, deadline, estimateHours) : null),
-    [title, subject, deadline, estimateHours]
+    () => (title.trim() ? detectPriority(title + subject, deadline) : null),
+    [title, subject, deadline]
   );
 
   function submit(e: React.FormEvent) {
@@ -45,15 +45,15 @@ export default function TaskList({ tasks, onAdd, onToggle, onDelete }: Props) {
       id: uid(),
       title: title.trim(),
       subject: subject.trim() || "通用",
-      estimateHours: Math.max(1, estimateHours),
-      priority: detectPriority(title + subject, deadline, estimateHours),
+      priority: detectPriority(title + subject, deadline),
       done: false,
       deadline,
+      deadlineTime: deadlineTime || undefined,
       createdAt: Date.now(),
     });
     setTitle("");
     setSubject("");
-    setEstimateHours(1);
+    setDeadlineTime("");
   }
 
   // 排序：未完成在前；优先级 高>中>低；同级按截止日近的在前
@@ -76,7 +76,7 @@ export default function TaskList({ tasks, onAdd, onToggle, onDelete }: Props) {
         <span className="text-xs text-slate-400">智能识别优先级并排序</span>
       </div>
 
-      <form onSubmit={submit} className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_120px_90px_130px_auto]">
+      <form onSubmit={submit} className="mb-2 grid grid-cols-1 gap-2 sm:grid-cols-[1fr_120px_140px_110px_auto]">
         <input
           value={title}
           onChange={(e) => setTitle(e.target.value)}
@@ -90,19 +90,17 @@ export default function TaskList({ tasks, onAdd, onToggle, onDelete }: Props) {
           className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none"
         />
         <input
-          type="number"
-          min={1}
-          max={40}
-          value={estimateHours}
-          onChange={(e) => setEstimateHours(Number(e.target.value))}
-          title="预计小时数"
-          className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none"
-        />
-        <input
           type="date"
           value={deadline}
           onChange={(e) => setDeadline(e.target.value)}
           className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none"
+        />
+        <input
+          type="time"
+          value={deadlineTime}
+          onChange={(e) => setDeadlineTime(e.target.value)}
+          title="截止时刻（可选，不填则只精确到日）"
+          className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-indigo-400 focus:outline-none"
         />
         <button
           type="submit"
@@ -127,7 +125,7 @@ export default function TaskList({ tasks, onAdd, onToggle, onDelete }: Props) {
           {daysUntil(suggestion.deadline) < 0
             ? `已逾期 ${-daysUntil(suggestion.deadline)} 天，尽快处理！`
             : daysUntil(suggestion.deadline) === 0
-              ? "今天就是截止日！"
+              ? `今天${suggestion.deadlineTime ? ` ${suggestion.deadlineTime} ` : ""}截止！`
               : `距离截止还有 ${daysUntil(suggestion.deadline)} 天。`}
         </div>
       )}
@@ -163,15 +161,14 @@ export default function TaskList({ tasks, onAdd, onToggle, onDelete }: Props) {
                     {meta.label}优先级
                   </span>
                   <span className={`rounded-full px-2 py-0.5 font-medium ${subjectColor(t.subject)}`}>{t.subject}</span>
-                  <span className="text-slate-400">约 {t.estimateHours} 小时</span>
                   <span className={d <= 0 && !t.done ? "font-medium text-rose-600" : "text-slate-400"}>
                     {t.done
                       ? "已完成"
                       : d < 0
-                        ? `已逾期 ${-d} 天`
+                        ? `已逾期 ${-d} 天 · ${formatDeadline(t)}`
                         : d === 0
-                          ? "今天截止"
-                          : `${d} 天后截止`}
+                          ? `今天${t.deadlineTime ? ` ${t.deadlineTime} ` : ""}截止`
+                          : `${d} 天后截止 · ${formatDeadline(t)}`}
                   </span>
                 </div>
               </div>

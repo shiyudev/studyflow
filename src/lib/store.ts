@@ -12,31 +12,28 @@ const initialState: AppState = { tasks: [] };
 function normalize(raw: unknown): AppState {
   if (!raw || typeof raw !== "object") return initialState;
   const tasks = Array.isArray((raw as { tasks?: unknown }).tasks)
-    ? ((raw as { tasks: unknown[] }).tasks as Partial<Task & { estimate?: number }>[])
+    ? ((raw as { tasks: unknown[] }).tasks as Partial<Task>[])
     : [];
   return {
     tasks: tasks
       .filter((t) => t && typeof t.id === "string" && typeof t.title === "string")
-      .map((t) => {
-        const estimateHours =
-          typeof t.estimateHours === "number" && t.estimateHours > 0
-            ? t.estimateHours
-            : Math.max(1, Math.round(((t.estimate ?? 2) as number) * 0.5));
-        return {
-          id: t.id as string,
-          title: t.title as string,
-          subject: typeof t.subject === "string" ? t.subject : "通用",
-          estimateHours,
-          priority:
-            t.priority === "low" || t.priority === "medium" || t.priority === "high"
-              ? t.priority
-              : detectPriority(t.title as string, (t.deadline as string) ?? "", estimateHours),
-          done: Boolean(t.done),
-          deadline: typeof t.deadline === "string" ? t.deadline : "",
-          createdAt: typeof t.createdAt === "number" ? t.createdAt : Date.now(),
-          completedAt: typeof t.completedAt === "number" ? t.completedAt : undefined,
-        };
-      }),
+      .map((t) => ({
+        id: t.id as string,
+        title: t.title as string,
+        subject: typeof t.subject === "string" ? t.subject : "通用",
+        priority:
+          t.priority === "low" || t.priority === "medium" || t.priority === "high"
+            ? t.priority
+            : detectPriority(t.title as string, (t.deadline as string) ?? ""),
+        done: Boolean(t.done),
+        deadline: typeof t.deadline === "string" ? t.deadline : "",
+        deadlineTime:
+          typeof t.deadlineTime === "string" && /^\d{2}:\d{2}$/.test(t.deadlineTime)
+            ? t.deadlineTime
+            : undefined,
+        createdAt: typeof t.createdAt === "number" ? t.createdAt : Date.now(),
+        completedAt: typeof t.completedAt === "number" ? t.completedAt : undefined,
+      })),
   };
 }
 
