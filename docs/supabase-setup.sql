@@ -39,6 +39,27 @@ create table if not exists checkins (
 -- v0.8 迭代：打卡记录增加用户自填的用时（分钟）
 alter table checkins add column if not exists duration int;
 
+-- 1.3 v0.10 计划表：每日详细计划 + 长期计划
+create table if not exists plans (
+  id text primary key,
+  /** daily=某日计划条目 / longterm=长期计划 */
+  type text not null default 'daily',
+  /** daily 用：计划日期 YYYY-MM-DD；可选时段 HH:mm */
+  date text,
+  time text,
+  /** longterm 用：计划标题 */
+  title text,
+  /** daily=计划内容 / longterm=详细内容 */
+  content text not null default '',
+  /** longterm 用：起止日期 */
+  start_date text,
+  end_date text,
+  /** daily=完成勾选 / longterm=已达成 */
+  done boolean not null default false,
+  created_at bigint not null default 0,
+  updated_at bigint not null default 0
+);
+
 -- 2. 学习仓库文件元数据表（文件内容存 Storage）
 create table if not exists repo_files (
   id text primary key,
@@ -54,6 +75,7 @@ create table if not exists repo_files (
 alter table tasks enable row level security;
 alter table repo_files enable row level security;
 alter table checkins enable row level security;
+alter table plans enable row level security;
 
 drop policy if exists "tasks allow all" on tasks;
 create policy "tasks allow all" on tasks
@@ -65,6 +87,10 @@ create policy "repo_files allow all" on repo_files
 
 drop policy if exists "checkins allow all" on checkins;
 create policy "checkins allow all" on checkins
+  for all using (true) with check (true);
+
+drop policy if exists "plans allow all" on plans;
+create policy "plans allow all" on plans
   for all using (true) with check (true);
 
 -- 4. 文件存储桶（公开读，anon 可写/删）

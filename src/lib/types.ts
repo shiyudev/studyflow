@@ -65,10 +65,32 @@ export interface RepoFile {
   createdAt: number;
 }
 
+/** 计划条目：daily=某日的详细计划 / longterm=围绕某件事的长期计划 */
+export interface PlanItem {
+  id: string;
+  type: "daily" | "longterm";
+  /** daily：计划日期 YYYY-MM-DD */
+  date?: string;
+  /** daily：可选时段 HH:mm */
+  time?: string;
+  /** longterm：计划标题（如「期末数学复习」） */
+  title?: string;
+  /** daily：计划内容 / longterm：详细内容 */
+  content: string;
+  /** longterm：起止日期 */
+  startDate?: string;
+  endDate?: string;
+  /** daily：完成勾选 / longterm：已达成 */
+  done: boolean;
+  createdAt: number;
+  updatedAt: number;
+}
+
 export interface AppState {
   tasks: Task[];
   files: RepoFile[];
   checkins: CheckIn[];
+  plans: PlanItem[];
 }
 
 export function todayKey(d = new Date()): string {

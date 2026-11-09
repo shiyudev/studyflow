@@ -1,7 +1,7 @@
 "use client";
 
 import { supabase } from "./supabase";
-import type { AppState, CheckIn, RepoFile, Task } from "./types";
+import type { AppState, CheckIn, PlanItem, RepoFile, Task } from "./types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -61,6 +61,38 @@ function checkInToRow(c: CheckIn) {
   };
 }
 
+function rowToPlan(r: any): PlanItem {
+  return {
+    id: r.id,
+    type: r.type === "longterm" ? "longterm" : "daily",
+    date: r.date ?? undefined,
+    time: r.time ?? undefined,
+    title: r.title ?? undefined,
+    content: r.content ?? "",
+    startDate: r.start_date ?? undefined,
+    endDate: r.end_date ?? undefined,
+    done: Boolean(r.done),
+    createdAt: Number(r.created_at) || Date.now(),
+    updatedAt: Number(r.updated_at) || Date.now(),
+  };
+}
+
+function planToRow(p: PlanItem) {
+  return {
+    id: p.id,
+    type: p.type,
+    date: p.date ?? null,
+    time: p.time ?? null,
+    title: p.title ?? null,
+    content: p.content,
+    start_date: p.startDate ?? null,
+    end_date: p.endDate ?? null,
+    done: p.done,
+    created_at: p.createdAt,
+    updated_at: p.updatedAt,
+  };
+}
+
 function rowToFile(r: any): RepoFile {
   return {
     id: r.id,
@@ -89,15 +121,16 @@ function fileToRow(f: RepoFile) {
 export async function fetchRemoteState(): Promise<AppState | null> {
   if (!supabase) return null;
   try {
-    const [t, f, c] = await Promise.all([
+    const [t, f, c, p] = await Promise.all([
       supabase.from("tasks").select("*"),
       supabase.from("repo_files").select("*"),
       supabase.from("checkins").select("*"),
+      supabase.from("plans").select("*"),
     ]);
-    if (t.error || f.error || c.error) {
+    if (t.error || f.error || c.error || p.error) {
       console.warn(
         "[studyflow] 拉取云端数据失败：",
-        t.error?.message ?? f.error?.message ?? c.error?.message
+        t.error?.message ?? f.error?.message ?? c.error?.message ?? p.error?.message
       );
       return null;
     }
@@ -105,6 +138,7 @@ export async function fetchRemoteState(): Promise<AppState | null> {
       tasks: (t.data ?? []).map(rowToTask),
       files: (f.data ?? []).map(rowToFile),
       checkins: (c.data ?? []).map(rowToCheckIn),
+      plans: (p.data ?? []).map(rowToPlan),
     };
   } catch (e) {
     console.warn("[studyflow] 云端不可用，使用本地数据", e);
@@ -159,6 +193,17 @@ async function doPushRemoteState(state: AppState): Promise<void> {
     } else {
       const del = await supabase.from("checkins").delete().neq("id", "");
       if (del.error) console.warn("[studyflow] checkins delete 失败：", del.error.message);
+    }
+
+    const planIds = state.plans.map((p) => p.id);
+    if (state.plans.length > 0) {
+      const up = await supabase.from("plans").upsert(state.plans.map(planToRow));
+      if (up.error) console.warn("[studyflow] plans upsert 失败：", up.error.message);
+      const del = await supabase.from("plans").delete().not("id", "in", `(${planIds.join(",")})`);
+      if (del.error) console.warn("[studyflow] plans delete 失败：", del.error.message);
+    } else {
+      const del = await supabase.from("plans").delete().neq("id", "");
+      if (del.error) console.warn("[studyflow] plans delete 失败：", del.error.message);
     }
   } catch (e) {
     console.warn("[studyflow] 同步云端失败（本地数据不受影响）", e);

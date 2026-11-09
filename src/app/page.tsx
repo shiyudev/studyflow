@@ -3,7 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import TaskList from "@/components/TaskList";
 import DailyCheckView from "@/components/DailyCheckView";
-import PlanOverview from "@/components/PlanOverview";
+import PlanView from "@/components/PlanView";
 import RepoView from "@/components/RepoView";
 import Sidebar, { type View } from "@/components/Sidebar";
 import { useAppState } from "@/lib/store";
@@ -168,12 +168,9 @@ export default function Home() {
           </header>
 
           {view === "plan" && (
-            <PlanOverview
-              tasks={state.tasks}
-              checkins={state.checkins}
-              onToggleDaily={toggleDaily}
-              onToggle={toggleTask}
-              onNavigate={setView}
+            <PlanView
+              plans={state.plans}
+              onChange={(plans) => setState((s) => ({ ...s, plans }))}
             />
           )}
           {view === "dailyTasks" && (
