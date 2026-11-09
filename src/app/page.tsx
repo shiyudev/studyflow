@@ -7,7 +7,7 @@ import PlanView from "@/components/PlanView";
 import RepoView from "@/components/RepoView";
 import Sidebar, { type View } from "@/components/Sidebar";
 import Scene from "@/components/Scene";
-import AsideStats from "@/components/AsideStats";
+import AsideQuote from "@/components/AsideQuote";
 import { useSceneClock, greeting } from "@/hooks/useSceneClock";
 import { useAppState } from "@/lib/store";
 import { todayKey, uid, type CheckIn, type RepoFile, type Task } from "@/lib/types";
@@ -226,7 +226,7 @@ export default function Home() {
           </div>
         </main>
 
-        <AsideStats tasks={state.tasks} checkins={state.checkins} phase={clock.phase} />
+        <AsideQuote phase={clock.phase} />
       </div>
     </>
   );
