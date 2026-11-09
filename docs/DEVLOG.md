@@ -17,6 +17,7 @@
 | v0.8 | 任务分类 + 打卡反馈 + 日期记录表 + 任务附件 + 反思/用时 | [每日任务（含打卡）](screenshots/v0.8-daily.png) · [作业任务](screenshots/v0.8-plan-homework.png) |
 | v0.9 | 计划汇总专栏（一屏总览所有计划） | [计划汇总](screenshots/v0.9-plan.png) · [作业任务](screenshots/v0.9-homework.png) |
 | v0.10 | 计划页重做：每日详细计划 + 长期计划 | [计划页](screenshots/v0.10-plan.png) |
+| v1.0 | 电影感换肤：逐光场景层（调色板插值/天体轨道/列车）+ 右栏统计 | [夜晚](screenshots/v1.0-night.png) · [黎明](screenshots/v1.0-dawn.png) · [白昼](screenshots/v1.0-day.png) · [黄昏](screenshots/v1.0-dusk.png) |
 
 ---
 
@@ -188,12 +189,38 @@
 
 ---
 
+## v1.0 — 电影感换肤：逐光
+
+**动机**：功能已齐，但界面是"能用"而非"想用"。按设计规格书（草稿 v5）一比一移植「逐光」电影感主题——只换皮肤，不动逻辑，`src/lib/` 数据层一行未改。
+
+**改动**：
+- **场景层 `Scene.tsx`**（z0，pointer-events:none，在 UI 之下）：天空三段渐变 / 银河 / 星星 / 光柱 / 日月 / 云 / 远山 / 列车 / 电线杆 / 亮窗房屋，全部 DOM+CSS 绘制，无图片资源
+- **场景时钟 `useSceneClock.ts`**：7 关键帧调色板（夜→黎明前→黎明→清晨→白昼→黄昏→入夜）随真实时间连续插值，rAF 每帧直写 CSS 变量（不触发 React 重渲染）；太阳/月亮轨道公式、各时段诗句与问候语逐字照抄草稿
+- **时间预览**：左下角悬浮卡可拖动预览全天任意时刻、一键"快进一日"（90 秒循环），时段徽标显示"预览 · 黄昏"等状态
+- **右栏 `AsideStats.tsx`**：竖排时段诗句 + 朱红印章、今日打卡 x/y、近 7 天打卡点、最长连续打卡、近 7 天记录柱状图
+- **全组件换皮**：玻璃拟态面板（半透明+backdrop-blur）、三列 grid 布局（侧栏/主区/右栏）、系统楷体点缀（问候语/诗句/徽标）、零 emoji（全部替换为 SVG 图标或文字）
+- **修复**：`dailyUnchecked` 在 `useMemo` 中于预渲染阶段读取 `new Date()`（Cache Components 报错，dev overlay 持续显示 "1 Issue"），改为 hydrated 后再读
+
+**四个时段**（调色板连续插值，非四套主题）：
+
+| 黎明 05:50 | 白昼 13:00 |
+|---|---|
+| ![v1.0 黎明](screenshots/v1.0-dawn.png) | ![v1.0 白昼](screenshots/v1.0-day.png) |
+
+| 黄昏 18:30 | 夜晚 21:00 |
+|---|---|
+| ![v1.0 黄昏](screenshots/v1.0-dusk.png) | ![v1.0 夜晚](screenshots/v1.0-night.png) |
+
+**各视图**：[计划页](screenshots/v1.0-plan.png) · [每日任务](screenshots/v1.0-daily.png) · [作业任务](screenshots/v1.0-homework.png) · [学习仓库](screenshots/v1.0-repo.png)
+
+---
+
 ## 技术栈
 
 - Next.js 16（App Router + Turbopack + Cache Components）
 - React 19 + TypeScript
 - Tailwind CSS 4
-- 数据持久化：localStorage（无后端，MVP 阶段刻意为之）
+- 数据持久化：localStorage 秒开 + Supabase 云端同步（v0.7 起，未配置时自动退化为纯本地）
 
 ## 本地运行
 
