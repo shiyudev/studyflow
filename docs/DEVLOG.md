@@ -18,6 +18,7 @@
 | v0.9 | 计划汇总专栏（一屏总览所有计划） | [计划汇总](screenshots/v0.9-plan.png) · [作业任务](screenshots/v0.9-homework.png) |
 | v0.10 | 计划页重做：每日详细计划 + 长期计划 | [计划页](screenshots/v0.10-plan.png) |
 | v1.0 | 电影感换肤：逐光场景层（调色板插值/天体轨道/列车）+ 右栏统计 | [夜晚](screenshots/v1.0-night.png) · [黎明](screenshots/v1.0-dawn.png) · [白昼](screenshots/v1.0-day.png) · [黄昏](screenshots/v1.0-dusk.png) |
+| v1.1 | 右栏精简：去掉今日打卡与近 7 天记录，只留时段诗句与印章 | [计划页](screenshots/v1.1-plan.png) |
 
 ---
 
@@ -212,6 +213,19 @@
 | ![v1.0 黄昏](screenshots/v1.0-dusk.png) | ![v1.0 夜晚](screenshots/v1.0-night.png) |
 
 **各视图**：[计划页](screenshots/v1.0-plan.png) · [每日任务](screenshots/v1.0-daily.png) · [作业任务](screenshots/v1.0-homework.png) · [学习仓库](screenshots/v1.0-repo.png)
+
+---
+
+## v1.1 — 右栏精简
+
+**动机**：右栏的"今日打卡""近 7 天记录"两块统计信息与主区功能重复（顶栏已有未打卡计数、任务页有完整打卡记录），撤掉后右栏只做一件事——安静陪伴。
+
+**改动**：
+- 移除右栏今日打卡（x/y + 周圆点 + 最长连续）与近 7 天记录柱状图，只保留竖排时段诗句 + 朱红印章
+- `AsideStats.tsx` 更名 `AsideQuote.tsx`（职责已变，不再统计），props 从 tasks/checkins 精简为 phase
+- 同步清理 globals.css 中这些模块独占的样式（stat/sdot/wk/bar 系列与 .hr，共 20 条规则）
+
+![v1.1 计划页](screenshots/v1.1-plan.png)
 
 ---
 
