@@ -1,17 +1,54 @@
 export type Priority = "low" | "medium" | "high";
 
+/** 任务分类：daily=每日固定任务（不用每天添加）/ homework=作业任务（按截止日期添加） */
+export type TaskType = "daily" | "homework";
+
+/** 任务附件：作业内容文本、网址、文件一起存放在任务上 */
+export interface Attachment {
+  id: string;
+  kind: "text" | "link" | "file";
+  /** 显示名：文本的标题、链接的标题、文件的文件名 */
+  name: string;
+  /** kind=text 时的内容 */
+  text?: string;
+  /** kind=link 时的网址 */
+  url?: string;
+  /** kind=file 时 Supabase Storage 中的对象 id */
+  fileId?: string;
+  createdAt: number;
+}
+
 export interface Task {
   id: string;
   title: string;
   subject: string;
   priority: Priority;
+  /** 任务分类，默认 homework（旧数据迁移） */
+  type: TaskType;
   done: boolean;
-  /** 截止日期 YYYY-MM-DD */
+  /** 截止日期 YYYY-MM-DD；每日任务可为空 */
   deadline: string;
   /** 可选：截止时刻 HH:mm，不填则只精确到日 */
   deadlineTime?: string;
+  attachments: Attachment[];
   createdAt: number;
   completedAt?: number;
+}
+
+/** 打卡/完成记录：做与没做都记录（同一任务同一天最多一条） */
+export interface CheckIn {
+  id: string;
+  taskId: string;
+  /** 记录日期 YYYY-MM-DD */
+  date: string;
+  /** done=已完成 / missed=没做 */
+  status: "done" | "missed";
+  /** 反思原因（没做）/ 完成情况备注（完成），可编辑 */
+  reason?: string;
+  /** 完成用时（分钟，用户自填） */
+  duration?: number;
+  /** 系统记录时间戳 */
+  createdAt: number;
 }
 
 /** 学习仓库中的文件元信息；文件内容（Blob）存放在 IndexedDB */
@@ -31,6 +68,7 @@ export interface RepoFile {
 export interface AppState {
   tasks: Task[];
   files: RepoFile[];
+  checkins: CheckIn[];
 }
 
 export function todayKey(d = new Date()): string {

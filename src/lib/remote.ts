@@ -1,7 +1,7 @@
 "use client";
 
 import { supabase } from "./supabase";
-import type { AppState, RepoFile, Task } from "./types";
+import type { AppState, CheckIn, RepoFile, Task } from "./types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -11,9 +11,11 @@ function rowToTask(r: any): Task {
     title: r.title ?? "",
     subject: r.subject ?? "",
     priority: r.priority ?? "low",
+    type: r.type === "daily" ? "daily" : "homework",
     done: Boolean(r.done),
     deadline: r.deadline ?? "",
     deadlineTime: r.deadline_time ?? undefined,
+    attachments: Array.isArray(r.attachments) ? r.attachments : [],
     createdAt: Number(r.created_at) || Date.now(),
     completedAt: r.completed_at ?? undefined,
   };
@@ -25,11 +27,37 @@ function taskToRow(t: Task) {
     title: t.title,
     subject: t.subject,
     priority: t.priority,
+    type: t.type,
     done: t.done,
     deadline: t.deadline,
     deadline_time: t.deadlineTime ?? null,
+    attachments: t.attachments,
     created_at: t.createdAt,
     completed_at: t.completedAt ?? null,
+  };
+}
+
+function rowToCheckIn(r: any): CheckIn {
+  return {
+    id: r.id,
+    taskId: r.task_id,
+    date: r.date ?? "",
+    status: r.status === "missed" ? "missed" : "done",
+    reason: r.reason ?? undefined,
+    duration: typeof r.duration === "number" && r.duration > 0 ? r.duration : undefined,
+    createdAt: Number(r.created_at) || Date.now(),
+  };
+}
+
+function checkInToRow(c: CheckIn) {
+  return {
+    id: c.id,
+    task_id: c.taskId,
+    date: c.date,
+    status: c.status,
+    reason: c.reason ?? null,
+    duration: c.duration ?? null,
+    created_at: c.createdAt,
   };
 }
 
@@ -61,17 +89,22 @@ function fileToRow(f: RepoFile) {
 export async function fetchRemoteState(): Promise<AppState | null> {
   if (!supabase) return null;
   try {
-    const [t, f] = await Promise.all([
+    const [t, f, c] = await Promise.all([
       supabase.from("tasks").select("*"),
       supabase.from("repo_files").select("*"),
+      supabase.from("checkins").select("*"),
     ]);
-    if (t.error || f.error) {
-      console.warn("[studyflow] 拉取云端数据失败：", t.error?.message ?? f.error?.message);
+    if (t.error || f.error || c.error) {
+      console.warn(
+        "[studyflow] 拉取云端数据失败：",
+        t.error?.message ?? f.error?.message ?? c.error?.message
+      );
       return null;
     }
     return {
       tasks: (t.data ?? []).map(rowToTask),
       files: (f.data ?? []).map(rowToFile),
+      checkins: (c.data ?? []).map(rowToCheckIn),
     };
   } catch (e) {
     console.warn("[studyflow] 云端不可用，使用本地数据", e);
@@ -115,6 +148,17 @@ async function doPushRemoteState(state: AppState): Promise<void> {
     } else {
       const del = await supabase.from("repo_files").delete().neq("id", "");
       if (del.error) console.warn("[studyflow] repo_files delete 失败：", del.error.message);
+    }
+
+    const checkInIds = state.checkins.map((c) => c.id);
+    if (state.checkins.length > 0) {
+      const up = await supabase.from("checkins").upsert(state.checkins.map(checkInToRow));
+      if (up.error) console.warn("[studyflow] checkins upsert 失败：", up.error.message);
+      const del = await supabase.from("checkins").delete().not("id", "in", `(${checkInIds.join(",")})`);
+      if (del.error) console.warn("[studyflow] checkins delete 失败：", del.error.message);
+    } else {
+      const del = await supabase.from("checkins").delete().neq("id", "");
+      if (del.error) console.warn("[studyflow] checkins delete 失败：", del.error.message);
     }
   } catch (e) {
     console.warn("[studyflow] 同步云端失败（本地数据不受影响）", e);

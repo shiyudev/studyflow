@@ -16,6 +16,29 @@ create table if not exists tasks (
   completed_at bigint
 );
 
+-- 1.1 v0.8 新增列：任务分类（daily=每日固定 / homework=作业）+ 附件（jsonb 数组）
+alter table tasks add column if not exists type text not null default 'homework';
+alter table tasks add column if not exists attachments jsonb not null default '[]';
+
+-- 1.2 v0.8 打卡/完成记录表：做与没做都记录，没做可写反思原因
+create table if not exists checkins (
+  id text primary key,
+  task_id text not null,
+  /** 记录日期 YYYY-MM-DD（每日任务=当天；作业任务=截止日） */
+  date text not null,
+  /** done=已完成 / missed=没做 */
+  status text not null,
+  /** 反思原因（没做）/ 完成情况备注（完成） */
+  reason text,
+  /** 完成用时（分钟，用户自填） */
+  duration int,
+  created_at bigint not null default 0,
+  unique (task_id, date)
+);
+
+-- v0.8 迭代：打卡记录增加用户自填的用时（分钟）
+alter table checkins add column if not exists duration int;
+
 -- 2. 学习仓库文件元数据表（文件内容存 Storage）
 create table if not exists repo_files (
   id text primary key,
@@ -30,6 +53,7 @@ create table if not exists repo_files (
 -- 3. 放开 anon 访问（配合 Row Level Security）
 alter table tasks enable row level security;
 alter table repo_files enable row level security;
+alter table checkins enable row level security;
 
 drop policy if exists "tasks allow all" on tasks;
 create policy "tasks allow all" on tasks
@@ -37,6 +61,10 @@ create policy "tasks allow all" on tasks
 
 drop policy if exists "repo_files allow all" on repo_files;
 create policy "repo_files allow all" on repo_files
+  for all using (true) with check (true);
+
+drop policy if exists "checkins allow all" on checkins;
+create policy "checkins allow all" on checkins
   for all using (true) with check (true);
 
 -- 4. 文件存储桶（公开读，anon 可写/删）

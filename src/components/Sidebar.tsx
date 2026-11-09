@@ -1,20 +1,22 @@
 "use client";
 
-export type View = "plan" | "repo" | "stats";
+export type View = "dailyTasks" | "homeworkTasks" | "repo";
 
 interface Props {
   view: View;
   onChange: (view: View) => void;
   pendingCount: number;
+  /** 今日未打卡的每日任务数 */
+  dailyUnchecked: number;
 }
 
 const NAV_ITEMS: { key: View; label: string; icon: string }[] = [
-  { key: "plan", label: "学习计划", icon: "📋" },
+  { key: "dailyTasks", label: "每日任务", icon: "📌" },
+  { key: "homeworkTasks", label: "作业任务", icon: "📄" },
   { key: "repo", label: "学习仓库", icon: "📁" },
-  { key: "stats", label: "数据统计", icon: "📊" },
 ];
 
-export default function Sidebar({ view, onChange, pendingCount }: Props) {
+export default function Sidebar({ view, onChange, pendingCount, dailyUnchecked }: Props) {
   return (
     <>
       {/* 桌面端侧边栏 */}
@@ -44,13 +46,22 @@ export default function Sidebar({ view, onChange, pendingCount }: Props) {
               >
                 <span>{item.icon}</span>
                 <span className="flex-1 text-left">{item.label}</span>
-                {item.key === "plan" && pendingCount > 0 && (
+                {item.key === "homeworkTasks" && pendingCount > 0 && (
                   <span
                     className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
                       active ? "bg-indigo-600 text-white" : "bg-slate-200 text-slate-600"
                     }`}
                   >
                     {pendingCount}
+                  </span>
+                )}
+                {item.key === "dailyTasks" && dailyUnchecked > 0 && (
+                  <span
+                    className={`rounded-full px-2 py-0.5 text-xs font-semibold ${
+                      active ? "bg-emerald-600 text-white" : "bg-emerald-100 text-emerald-600"
+                    }`}
+                  >
+                    {dailyUnchecked}
                   </span>
                 )}
               </button>
@@ -81,9 +92,14 @@ export default function Sidebar({ view, onChange, pendingCount }: Props) {
             >
               <span>{item.icon}</span>
               {item.label}
-              {item.key === "plan" && pendingCount > 0 && (
+              {item.key === "homeworkTasks" && pendingCount > 0 && (
                 <span className={`rounded-full px-1.5 text-xs ${active ? "bg-white/25" : "bg-slate-200"}`}>
                   {pendingCount}
+                </span>
+              )}
+              {item.key === "dailyTasks" && dailyUnchecked > 0 && (
+                <span className={`rounded-full px-1.5 text-xs ${active ? "bg-white/25" : "bg-emerald-200"}`}>
+                  {dailyUnchecked}
                 </span>
               )}
             </button>

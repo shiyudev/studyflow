@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { detectPriority } from "./priority";
 import { fetchRemoteState, pushRemoteState } from "./remote";
 import { hasBackend } from "./supabase";
-import type { AppState, RepoFile, Task } from "./types";
+import type { AppState, Attachment, CheckIn, RepoFile, Task } from "./types";
 
 const STORAGE_KEY = "studyflow-state-v1";
 
-const initialState: AppState = { tasks: [], files: [] };
+const initialState: AppState = { tasks: [], files: [], checkins: [] };
 
 /** 兼容旧版本数据：补默认字段、剔除废弃字段（v0.5 的 notes 编辑器数据已废弃，自动忽略） */
 function normalize(raw: unknown): AppState {
@@ -19,7 +19,29 @@ function normalize(raw: unknown): AppState {
   const files = Array.isArray((raw as { files?: unknown }).files)
     ? ((raw as { files: unknown[] }).files as Partial<RepoFile>[])
     : [];
+  const checkins = Array.isArray((raw as { checkins?: unknown }).checkins)
+    ? ((raw as { checkins: unknown[] }).checkins as Partial<CheckIn>[])
+    : [];
   return {
+    checkins: checkins
+      .filter(
+        (c) =>
+          c &&
+          typeof c.id === "string" &&
+          typeof c.taskId === "string" &&
+          typeof c.date === "string" &&
+          (c.status === "done" || c.status === "missed")
+      )
+      .map((c) => ({
+        id: c.id as string,
+        taskId: c.taskId as string,
+        date: c.date as string,
+        status: c.status as "done" | "missed",
+        reason: typeof c.reason === "string" && c.reason ? c.reason : undefined,
+        duration:
+          typeof c.duration === "number" && c.duration > 0 ? c.duration : undefined,
+        createdAt: typeof c.createdAt === "number" ? c.createdAt : Date.now(),
+      })),
     files: files
       .filter((f) => f && typeof f.id === "string" && typeof f.name === "string")
       .map((f) => ({
@@ -42,11 +64,28 @@ function normalize(raw: unknown): AppState {
             ? t.priority
             : detectPriority(t.title as string, (t.deadline as string) ?? ""),
         done: Boolean(t.done),
+        type: t.type === "daily" ? "daily" : "homework",
         deadline: typeof t.deadline === "string" ? t.deadline : "",
         deadlineTime:
           typeof t.deadlineTime === "string" && /^\d{2}:\d{2}$/.test(t.deadlineTime)
             ? t.deadlineTime
             : undefined,
+        attachments: Array.isArray(t.attachments)
+          ? (t.attachments as Partial<Attachment>[])
+              .filter((a) => a && typeof a.id === "string" && typeof a.name === "string")
+              .map((a) => ({
+                id: a.id as string,
+                kind:
+                  a.kind === "text" || a.kind === "link" || a.kind === "file"
+                    ? a.kind
+                    : ("text" as const),
+                name: a.name as string,
+                text: typeof a.text === "string" ? a.text : undefined,
+                url: typeof a.url === "string" ? a.url : undefined,
+                fileId: typeof a.fileId === "string" ? a.fileId : undefined,
+                createdAt: typeof a.createdAt === "number" ? a.createdAt : Date.now(),
+              }))
+          : [],
         createdAt: typeof t.createdAt === "number" ? t.createdAt : Date.now(),
         completedAt: typeof t.completedAt === "number" ? t.completedAt : undefined,
       })),
@@ -85,8 +124,10 @@ export function useAppState(): [AppState, React.Dispatch<React.SetStateAction<Ap
       const remote = await fetchRemoteState();
       if (cancelled) return;
       if (remote) {
-        const remoteEmpty = remote.tasks.length === 0 && remote.files.length === 0;
-        const localHasData = local.tasks.length > 0 || local.files.length > 0;
+        const remoteEmpty =
+          remote.tasks.length === 0 && remote.files.length === 0 && remote.checkins.length === 0;
+        const localHasData =
+          local.tasks.length > 0 || local.files.length > 0 || local.checkins.length > 0;
         if (remoteEmpty && localHasData) {
           // 首次接入：把本地数据迁移上云，界面保持本地数据不变
           await pushRemoteState(local);
