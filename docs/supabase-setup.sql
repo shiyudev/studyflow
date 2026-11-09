@@ -60,6 +60,18 @@ create table if not exists plans (
   updated_at bigint not null default 0
 );
 
+-- 1.4 v1.2 每日记录与反思表：与每日计划按日期绑定，一天一条
+create table if not exists day_notes (
+  id text primary key,
+  /** 记录日期 YYYY-MM-DD，唯一（一天一条） */
+  date text not null unique,
+  /** 当日记录：实际做了什么、值得记住的事 */
+  record text not null default '',
+  /** 今日反思：哪里做得好、哪里可以改进 */
+  reflection text not null default '',
+  updated_at bigint not null default 0
+);
+
 -- 2. 学习仓库文件元数据表（文件内容存 Storage）
 create table if not exists repo_files (
   id text primary key,
@@ -76,6 +88,7 @@ alter table tasks enable row level security;
 alter table repo_files enable row level security;
 alter table checkins enable row level security;
 alter table plans enable row level security;
+alter table day_notes enable row level security;
 
 drop policy if exists "tasks allow all" on tasks;
 create policy "tasks allow all" on tasks
@@ -91,6 +104,10 @@ create policy "checkins allow all" on checkins
 
 drop policy if exists "plans allow all" on plans;
 create policy "plans allow all" on plans
+  for all using (true) with check (true);
+
+drop policy if exists "day_notes allow all" on day_notes;
+create policy "day_notes allow all" on day_notes
   for all using (true) with check (true);
 
 -- 4. 文件存储桶（公开读，anon 可写/删）

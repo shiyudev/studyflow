@@ -187,7 +187,9 @@ export default function Home() {
             {view === "plan" && (
               <PlanView
                 plans={state.plans}
-                onChange={(plans) => setState((s) => ({ ...s, plans }))}
+                dayNotes={state.dayNotes}
+                onPlansChange={(plans) => setState((s) => ({ ...s, plans }))}
+                onDayNotesChange={(dayNotes) => setState((s) => ({ ...s, dayNotes }))}
               />
             )}
             {view === "dailyTasks" && (

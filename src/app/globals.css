@@ -204,6 +204,20 @@ body::after { content: ''; position: fixed; inset: -60px; z-index: 0; pointer-ev
   background: transparent; color: var(--dim); cursor: pointer; flex: none }
 .chip-btn.on { color: var(--accent-ink); background: var(--accent); border-color: var(--accent) }
 .add-row { display: flex; gap: 8px; margin-bottom: 12px }
+/* 查看 / 制定 模式切换（v1.2） */
+.modebar { display: flex; gap: 6px; margin: 10px 0 12px }
+.mode-btn { font-size: 11.5px; padding: 5px 14px; border-radius: 8px; border: 1px solid var(--glass-border);
+  background: transparent; color: var(--dim); cursor: pointer; letter-spacing: .12em }
+.mode-btn:hover { border-color: var(--accent); color: var(--accent) }
+.mode-btn.on { color: var(--accent-ink); background: var(--accent); border-color: var(--accent) }
+/* 当日记录与反思（v1.2，按日期绑定） */
+.note-wrap { margin-top: 14px; border-top: 1px solid var(--track); padding-top: 12px }
+.note-block { margin-bottom: 12px }
+.note-block:last-child { margin-bottom: 0 }
+.note-label { display: flex; justify-content: space-between; align-items: baseline;
+  font-size: 10.5px; font-weight: 600; color: var(--faint); letter-spacing: .24em; margin-bottom: 6px }
+.note-saved { font-size: 10px; font-weight: 400; letter-spacing: .05em; color: var(--faint); opacity: .8 }
+.note-ta { resize: vertical; line-height: 1.7; font-size: 12.5px }
 .plan-list { display: flex; flex-direction: column; gap: 6px }
 .plan-item { display: flex; align-items: center; gap: 10px; padding: 9px 10px; border-radius: 10px; border: 1px solid var(--glass-border) }
 .plan-item:hover { border-color: var(--accent) }

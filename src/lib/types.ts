@@ -86,11 +86,24 @@ export interface PlanItem {
   updatedAt: number;
 }
 
+/** 每日记录与反思：与每日计划按日期绑定，一天一条 */
+export interface DayNote {
+  id: string;
+  /** 记录日期 YYYY-MM-DD（与每日计划同键） */
+  date: string;
+  /** 当日记录：实际做了什么、值得记住的事 */
+  record: string;
+  /** 今日反思：哪里做得好、哪里可以改进 */
+  reflection: string;
+  updatedAt: number;
+}
+
 export interface AppState {
   tasks: Task[];
   files: RepoFile[];
   checkins: CheckIn[];
   plans: PlanItem[];
+  dayNotes: DayNote[];
 }
 
 export function todayKey(d = new Date()): string {

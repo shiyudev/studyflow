@@ -4,11 +4,11 @@ import { useEffect, useRef, useState } from "react";
 import { detectPriority } from "./priority";
 import { fetchRemoteState, pushRemoteState } from "./remote";
 import { hasBackend } from "./supabase";
-import type { AppState, Attachment, CheckIn, PlanItem, RepoFile, Task } from "./types";
+import type { AppState, Attachment, CheckIn, DayNote, PlanItem, RepoFile, Task } from "./types";
 
 const STORAGE_KEY = "studyflow-state-v1";
 
-const initialState: AppState = { tasks: [], files: [], checkins: [], plans: [] };
+const initialState: AppState = { tasks: [], files: [], checkins: [], plans: [], dayNotes: [] };
 
 /** 兼容旧版本数据：补默认字段、剔除废弃字段（v0.5 的 notes 编辑器数据已废弃，自动忽略） */
 function normalize(raw: unknown): AppState {
@@ -25,7 +25,19 @@ function normalize(raw: unknown): AppState {
   const plans = Array.isArray((raw as { plans?: unknown }).plans)
     ? ((raw as { plans: unknown[] }).plans as Partial<PlanItem>[])
     : [];
+  const dayNotes = Array.isArray((raw as { dayNotes?: unknown }).dayNotes)
+    ? ((raw as { dayNotes: unknown[] }).dayNotes as Partial<DayNote>[])
+    : [];
   return {
+    dayNotes: dayNotes
+      .filter((n) => n && typeof n.id === "string" && typeof n.date === "string" && n.date)
+      .map((n) => ({
+        id: n.id as string,
+        date: n.date as string,
+        record: typeof n.record === "string" ? n.record : "",
+        reflection: typeof n.reflection === "string" ? n.reflection : "",
+        updatedAt: typeof n.updatedAt === "number" ? n.updatedAt : Date.now(),
+      })),
     plans: plans
       .filter((p) => p && typeof p.id === "string")
       .map((p) => ({
@@ -144,10 +156,12 @@ export function useAppState(): [AppState, React.Dispatch<React.SetStateAction<Ap
       if (remote) {
         const remoteEmpty =
           remote.tasks.length === 0 && remote.files.length === 0 &&
-          remote.checkins.length === 0 && remote.plans.length === 0;
+          remote.checkins.length === 0 && remote.plans.length === 0 &&
+          remote.dayNotes.length === 0;
         const localHasData =
           local.tasks.length > 0 || local.files.length > 0 ||
-          local.checkins.length > 0 || local.plans.length > 0;
+          local.checkins.length > 0 || local.plans.length > 0 ||
+          local.dayNotes.length > 0;
         if (remoteEmpty && localHasData) {
           // 首次接入：把本地数据迁移上云，界面保持本地数据不变
           await pushRemoteState(local);

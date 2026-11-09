@@ -1,7 +1,7 @@
 "use client";
 
 import { supabase } from "./supabase";
-import type { AppState, CheckIn, PlanItem, RepoFile, Task } from "./types";
+import type { AppState, CheckIn, DayNote, PlanItem, RepoFile, Task } from "./types";
 
 /* eslint-disable @typescript-eslint/no-explicit-any */
 
@@ -93,6 +93,26 @@ function planToRow(p: PlanItem) {
   };
 }
 
+function rowToDayNote(r: any): DayNote {
+  return {
+    id: r.id,
+    date: r.date ?? "",
+    record: r.record ?? "",
+    reflection: r.reflection ?? "",
+    updatedAt: Number(r.updated_at) || Date.now(),
+  };
+}
+
+function dayNoteToRow(n: DayNote) {
+  return {
+    id: n.id,
+    date: n.date,
+    record: n.record,
+    reflection: n.reflection,
+    updated_at: n.updatedAt,
+  };
+}
+
 function rowToFile(r: any): RepoFile {
   return {
     id: r.id,
@@ -134,11 +154,25 @@ export async function fetchRemoteState(): Promise<AppState | null> {
       );
       return null;
     }
+    // day_notes（v1.2 新增表）：若用户尚未重跑建表 SQL，单独容错为空，
+    // 不影响其他表的云端恢复
+    let dayNotes: AppState["dayNotes"] = [];
+    try {
+      const n = await supabase.from("day_notes").select("*");
+      if (n.error) {
+        console.warn("[studyflow] day_notes 拉取失败（需重跑 docs/supabase-setup.sql）：", n.error.message);
+      } else {
+        dayNotes = (n.data ?? []).map(rowToDayNote);
+      }
+    } catch (e) {
+      console.warn("[studyflow] day_notes 不可用，按空表处理", e);
+    }
     return {
       tasks: (t.data ?? []).map(rowToTask),
       files: (f.data ?? []).map(rowToFile),
       checkins: (c.data ?? []).map(rowToCheckIn),
       plans: (p.data ?? []).map(rowToPlan),
+      dayNotes,
     };
   } catch (e) {
     console.warn("[studyflow] 云端不可用，使用本地数据", e);
@@ -204,6 +238,22 @@ async function doPushRemoteState(state: AppState): Promise<void> {
     } else {
       const del = await supabase.from("plans").delete().neq("id", "");
       if (del.error) console.warn("[studyflow] plans delete 失败：", del.error.message);
+    }
+
+    // day_notes：表不存在时仅告警（用户重跑建表 SQL 后自动恢复同步）
+    try {
+      const noteIds = state.dayNotes.map((n) => n.id);
+      if (state.dayNotes.length > 0) {
+        const up = await supabase.from("day_notes").upsert(state.dayNotes.map(dayNoteToRow));
+        if (up.error) console.warn("[studyflow] day_notes upsert 失败：", up.error.message);
+        const del = await supabase.from("day_notes").delete().not("id", "in", `(${noteIds.join(",")})`);
+        if (del.error) console.warn("[studyflow] day_notes delete 失败：", del.error.message);
+      } else {
+        const del = await supabase.from("day_notes").delete().neq("id", "");
+        if (del.error) console.warn("[studyflow] day_notes delete 失败：", del.error.message);
+      }
+    } catch (e) {
+      console.warn("[studyflow] day_notes 同步失败（本地数据不受影响）", e);
     }
   } catch (e) {
     console.warn("[studyflow] 同步云端失败（本地数据不受影响）", e);
