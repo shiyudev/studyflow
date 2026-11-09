@@ -1,6 +1,6 @@
 "use client";
 
-export type View = "dailyTasks" | "homeworkTasks" | "repo";
+export type View = "plan" | "dailyTasks" | "homeworkTasks" | "repo";
 
 interface Props {
   view: View;
@@ -11,6 +11,7 @@ interface Props {
 }
 
 const NAV_ITEMS: { key: View; label: string; icon: string }[] = [
+  { key: "plan", label: "计划汇总", icon: "🗂️" },
   { key: "dailyTasks", label: "每日任务", icon: "📌" },
   { key: "homeworkTasks", label: "作业任务", icon: "📄" },
   { key: "repo", label: "学习仓库", icon: "📁" },

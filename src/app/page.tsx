@@ -3,6 +3,7 @@
 import { useCallback, useMemo, useState } from "react";
 import TaskList from "@/components/TaskList";
 import DailyCheckView from "@/components/DailyCheckView";
+import PlanOverview from "@/components/PlanOverview";
 import RepoView from "@/components/RepoView";
 import Sidebar, { type View } from "@/components/Sidebar";
 import { useAppState } from "@/lib/store";
@@ -22,7 +23,7 @@ function greeting(): string {
 
 export default function Home() {
   const [state, setState, hydrated] = useAppState();
-  const [view, setView] = useState<View>("dailyTasks");
+  const [view, setView] = useState<View>("plan");
 
   const addTask = useCallback(
     (task: Task) => setState((s) => ({ ...s, tasks: [...s.tasks, task] })),
@@ -166,6 +167,15 @@ export default function Home() {
             </p>
           </header>
 
+          {view === "plan" && (
+            <PlanOverview
+              tasks={state.tasks}
+              checkins={state.checkins}
+              onToggleDaily={toggleDaily}
+              onToggle={toggleTask}
+              onNavigate={setView}
+            />
+          )}
           {view === "dailyTasks" && (
             <div className="space-y-4">
               <TaskList
