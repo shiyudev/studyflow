@@ -22,7 +22,7 @@ const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
 
 function dateLabel(dateStr: string): string {
   const d = new Date(dateStr + "T00:00:00");
-  return `${d.getMonth() + 1}/${d.getDate()} 周${WEEKDAYS[d.getDay()]}`;
+  return `${d.getMonth() + 1}/${d.getDate()}`;
 }
 
 function timeLabel(ts: number): string {
@@ -39,14 +39,13 @@ export function durationLabel(min?: number): string {
   return m ? `${h} 小时 ${m} 分钟` : `${h} 小时`;
 }
 
-/** 反思/用时填写表单（每日打卡与作业反馈共用交互） */
+/** 反思/用时填写表单（打卡与反馈共用交互） */
 export function ReflectionForm({
   defaultReason,
   defaultDuration,
   reasonRequired,
   reasonPlaceholder,
   submitText,
-  cancelText,
   onSubmit,
   onCancel,
 }: {
@@ -55,7 +54,6 @@ export function ReflectionForm({
   reasonRequired?: boolean;
   reasonPlaceholder: string;
   submitText: string;
-  cancelText?: string;
   onSubmit: (reason: string | undefined, duration: number | undefined) => void;
   onCancel?: () => void;
 }) {
@@ -73,53 +71,39 @@ export function ReflectionForm({
   }
 
   return (
-    <div className="mt-2 space-y-2 rounded-xl bg-slate-50 p-3 ring-1 ring-slate-200">
+    <div className="reflect">
       <textarea
         autoFocus
         value={reason}
         onChange={(e) => setReason(e.target.value)}
-        onKeyDown={(e) => e.key === "Enter" && !e.shiftKey && (e.preventDefault(), submit())}
         placeholder={reasonPlaceholder}
-        rows={2}
-        className="w-full resize-none rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm outline-none focus:border-indigo-400"
       />
-      <div className="flex items-center gap-2">
-        <span className="shrink-0 text-xs text-slate-400">用时</span>
+      <div className="reflect-row">
+        <span className="lbl">用时</span>
         <input
           type="number"
           min={1}
+          className="inp"
+          style={{ width: 76, padding: "4px 8px", fontSize: 11.5 }}
           value={duration}
           onChange={(e) => setDuration(e.target.value)}
           placeholder="分钟"
-          className="w-24 rounded-lg border border-slate-200 bg-white px-2 py-1.5 text-sm outline-none focus:border-indigo-400"
         />
-        <span className="text-xs text-slate-400">分钟</span>
         {[15, 30, 45, 60].map((m) => (
           <button
             key={m}
             type="button"
+            className={`rchip${duration === String(m) ? " on" : ""}`}
             onClick={() => setDuration(String(m))}
-            className={`rounded-lg px-2 py-1 text-xs ${
-              duration === String(m)
-                ? "bg-indigo-600 text-white"
-                : "bg-white text-slate-500 ring-1 ring-slate-200 hover:bg-indigo-50"
-            }`}
           >
             {m}′
           </button>
         ))}
-        <div className="flex-1" />
+        <span className="flex1" />
         {onCancel && (
-          <button onClick={onCancel} className="rounded-lg px-2 py-1.5 text-xs text-slate-400 hover:text-slate-600">
-            {cancelText ?? "跳过"}
-          </button>
+          <button className="ck-btn" onClick={onCancel}>跳过</button>
         )}
-        <button
-          onClick={submit}
-          className="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-indigo-700"
-        >
-          {submitText}
-        </button>
+        <button className="ck-btn solid" onClick={submit}>{submitText}</button>
       </div>
     </div>
   );
@@ -143,99 +127,79 @@ export default function DailyCheckView({ tasks, checkins, onRecord, onRemove }: 
     return checkins.find((c) => c.taskId === taskId && c.date === date);
   }
 
-  function closeForm() {
-    setFormFor(null);
-  }
-
   const todayDone = tasks.filter((t) => findCheckIn(t.id, today)?.status === "done").length;
   const todayMissed = tasks.filter((t) => findCheckIn(t.id, today)?.status === "missed").length;
+  const todayFullLabel = (() => {
+    const d = new Date();
+    return `${d.getMonth() + 1}月${d.getDate()}日 星期${WEEKDAYS[d.getDay()]}`;
+  })();
 
   return (
-    <div className="space-y-4">
+    <>
       {/* 今日打卡 */}
-      <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-800">🔁 今日打卡</h2>
-          <span className="text-xs text-slate-400">
-            {dateLabel(today)} · {tasks.length} 项 · 已完成 {todayDone} · 未做 {todayMissed}
+      <div className="glass card">
+        <div className="card-head">
+          <h2>今 日 打 卡</h2>
+          <span className="card-hint">
+            {todayFullLabel} · {tasks.length} 项 · 已完成 {todayDone} · 未做 {todayMissed}
           </span>
         </div>
 
         {tasks.length === 0 ? (
-          <p className="py-8 text-center text-sm text-slate-400">
-            还没有每日任务。去「学习计划」添加一个，比如"背单词30个" 🌱
-          </p>
+          <p className="empty">还没有每日任务。先在上面添加一个，比如「背单词 30 个」</p>
         ) : (
-          <ul className="space-y-2">
+          <div className="ck-list">
             {tasks.map((t) => {
               const ci = findCheckIn(t.id, today);
               return (
-                <li
+                <div
                   key={t.id}
-                  className={`rounded-xl border px-4 py-3 ${
-                    ci?.status === "done"
-                      ? "border-emerald-200 bg-emerald-50/60"
-                      : ci?.status === "missed"
-                        ? "border-rose-200 bg-rose-50/60"
-                        : "border-slate-200"
-                  }`}
+                  className={`ck-item${ci?.status === "done" ? " done" : ci?.status === "missed" ? " missed" : ""}`}
                 >
-                  <div className="flex items-center gap-3">
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-slate-800">{t.title}</p>
+                  <div className="ck-top">
+                    <div style={{ flex: 1, minWidth: 0 }}>
+                      <div className="ck-title">{t.title}</div>
                       {ci && (
-                        <p className={`mt-1 text-xs ${ci.status === "done" ? "text-emerald-700" : "text-rose-600"}`}>
-                          {ci.status === "done" ? "✅ 已完成" : "❌ 没做"}
-                          <span className="ml-2 font-normal text-slate-400">{timeLabel(ci.createdAt)}</span>
-                          {ci.duration ? (
-                            <span className="ml-2 font-normal text-indigo-500">⏱ {durationLabel(ci.duration)}</span>
-                          ) : null}
-                        </p>
+                        <div className="ck-status">
+                          <span className={ci.status === "done" ? "done" : "missed"}>
+                            {ci.status === "done" ? "已完成" : "没做"}
+                          </span>{" "}
+                          <span className="dim">
+                            {timeLabel(ci.createdAt)}
+                            {ci.duration ? ` · 用时 ${durationLabel(ci.duration)}` : ""}
+                          </span>
+                        </div>
                       )}
                       {ci?.reason && (
-                        <p className="mt-0.5 text-xs text-slate-500">
-                          {ci.status === "done" ? "📝 备注：" : "💭 反思："}
-                          {ci.reason}
-                        </p>
+                        <div className="ck-status">
+                          <span className="dim">
+                            {ci.status === "done" ? "备注：" : "反思："}
+                            {ci.reason}
+                          </span>
+                        </div>
+                      )}
+                      {!ci && (
+                        <div className="ck-status"><span className="dim">今天还没打卡</span></div>
                       )}
                     </div>
-                    {ci ? (
-                      <div className="flex shrink-0 items-center gap-2">
-                        <button
-                          onClick={() =>
-                            setFormFor(formFor === `edit:${t.id}` ? null : `edit:${t.id}`)
-                          }
-                          className="rounded-lg bg-white px-3 py-1.5 text-xs font-medium text-indigo-600 ring-1 ring-indigo-200 hover:bg-indigo-50"
-                        >
-                          ✍️ {ci.reason || ci.duration ? "修改反思/用时" : ci.status === "done" ? "写完成情况" : "写反思"}
-                        </button>
-                        <button
-                          onClick={() => onRemove(t.id, today)}
-                          className="text-xs text-slate-400 hover:text-slate-600"
-                        >
-                          撤销
-                        </button>
-                      </div>
-                    ) : (
-                      <div className="flex shrink-0 gap-1.5">
-                        <button
-                          onClick={() => {
-                            setFormFor(`new:done:${t.id}`);
-                          }}
-                          className="rounded-lg bg-emerald-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-emerald-700"
-                        >
-                          ✅ 完成
-                        </button>
-                        <button
-                          onClick={() => {
-                            setFormFor(`new:missed:${t.id}`);
-                          }}
-                          className="rounded-lg bg-slate-100 px-3 py-1.5 text-xs font-medium text-slate-600 hover:bg-rose-100 hover:text-rose-600"
-                        >
-                          ❌ 没做
-                        </button>
-                      </div>
-                    )}
+                    <div className="ck-btns">
+                      {ci ? (
+                        <>
+                          <button
+                            className="ck-btn"
+                            onClick={() => setFormFor(formFor === `edit:${t.id}` ? null : `edit:${t.id}`)}
+                          >
+                            {ci.reason || ci.duration ? "修改反思/用时" : ci.status === "done" ? "写完成情况" : "写反思"}
+                          </button>
+                          <button className="ck-btn" onClick={() => onRemove(t.id, today)}>撤销</button>
+                        </>
+                      ) : (
+                        <>
+                          <button className="ck-btn solid" onClick={() => setFormFor(`new:done:${t.id}`)}>完成</button>
+                          <button className="ck-btn" onClick={() => setFormFor(`new:missed:${t.id}`)}>没做</button>
+                        </>
+                      )}
+                    </div>
                   </div>
 
                   {/* 完成：可选填反思/用时 */}
@@ -246,11 +210,11 @@ export default function DailyCheckView({ tasks, checkins, onRecord, onRemove }: 
                       submitText="保存完成"
                       onSubmit={(reason, duration) => {
                         onRecord(t.id, today, "done", reason, duration);
-                        closeForm();
+                        setFormFor(null);
                       }}
                       onCancel={() => {
                         onRecord(t.id, today, "done");
-                        closeForm();
+                        setFormFor(null);
                       }}
                     />
                   )}
@@ -263,9 +227,9 @@ export default function DailyCheckView({ tasks, checkins, onRecord, onRemove }: 
                       submitText="记录没做"
                       onSubmit={(reason, duration) => {
                         onRecord(t.id, today, "missed", reason, duration);
-                        closeForm();
+                        setFormFor(null);
                       }}
-                      onCancel={closeForm}
+                      onCancel={() => setFormFor(null)}
                     />
                   )}
                   {/* 编辑已有记录 */}
@@ -280,38 +244,36 @@ export default function DailyCheckView({ tasks, checkins, onRecord, onRemove }: 
                       submitText="保存"
                       onSubmit={(reason, duration) => {
                         onRecord(t.id, today, ci.status, reason, duration);
-                        closeForm();
+                        setFormFor(null);
                       }}
-                      onCancel={closeForm}
+                      onCancel={() => setFormFor(null)}
                     />
                   )}
-                </li>
+                </div>
               );
             })}
-          </ul>
+          </div>
         )}
-      </section>
+      </div>
 
       {/* 日期记录表 */}
-      <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-        <div className="mb-4 flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-slate-800">📅 日期记录表</h2>
-          <span className="text-xs text-slate-400">最近 14 天 · ✅ 完成 · ❌ 没做（悬停看反思）· ➖ 无记录</span>
+      <div className="glass card">
+        <div className="card-head">
+          <h2>日 期 记 录 表</h2>
+          <span className="card-hint">最近 14 天 · ✓ 完成 · ✗ 没做（悬停看反思）· — 无记录</span>
         </div>
         {tasks.length === 0 ? (
-          <p className="py-6 text-center text-sm text-slate-400">暂无记录</p>
+          <p className="empty">暂无记录</p>
         ) : (
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[480px] border-collapse text-center text-sm">
+          <div style={{ overflowX: "auto" }}>
+            <table className="ctable">
               <thead>
-                <tr className="border-b border-slate-200 text-xs text-slate-400">
-                  <th className="px-2 py-2 text-left font-medium">日期</th>
+                <tr>
+                  <th style={{ textAlign: "left" }}>日期</th>
                   {tasks.map((t) => (
-                    <th key={t.id} className="max-w-24 truncate px-2 py-2 font-medium" title={t.title}>
-                      {t.title}
-                    </th>
+                    <th key={t.id} title={t.title}>{t.title.length > 4 ? t.title.slice(0, 4) : t.title}</th>
                   ))}
-                  <th className="px-2 py-2 font-medium">完成率</th>
+                  <th>完成率</th>
                 </tr>
               </thead>
               <tbody>
@@ -320,31 +282,27 @@ export default function DailyCheckView({ tasks, checkins, onRecord, onRemove }: 
                   const doneCount = records.filter((r) => r?.status === "done").length;
                   const isToday = date === today;
                   return (
-                    <tr key={date} className={`border-b border-slate-100 ${isToday ? "bg-indigo-50/50" : ""}`}>
-                      <td className={`px-2 py-2 text-left text-xs ${isToday ? "font-semibold text-indigo-600" : "text-slate-500"}`}>
+                    <tr key={date} className={isToday ? "today" : ""}>
+                      <td className="date-cell">
                         {dateLabel(date)}{isToday && "（今天）"}
                       </td>
                       {records.map((r, i) => (
-                        <td key={tasks[i].id} className="px-2 py-2">
+                        <td key={tasks[i].id}>
                           {r?.status === "done" ? (
                             <span
+                              className="cell-yes"
                               title={`备注：${r.reason ?? "（无）"}${r.duration ? `\n用时：${durationLabel(r.duration)}` : ""}`}
-                              className={r.reason || r.duration ? "cursor-help" : undefined}
                             >
-                              ✅
+                              ✓
                             </span>
                           ) : r?.status === "missed" ? (
-                            <span title={`反思：${r.reason ?? "（未填原因）"}`} className="cursor-help">
-                              ❌
-                            </span>
+                            <span className="cell-no" title={`反思：${r.reason ?? "（未填原因）"}`}>✗</span>
                           ) : (
-                            <span className="text-slate-300">➖</span>
+                            <span className="cell-none">—</span>
                           )}
                         </td>
                       ))}
-                      <td className="px-2 py-2 text-xs text-slate-500">
-                        {records.some(Boolean) ? `${doneCount}/${tasks.length}` : "—"}
-                      </td>
+                      <td>{records.some(Boolean) ? `${doneCount}/${tasks.length}` : "—"}</td>
                     </tr>
                   );
                 })}
@@ -352,7 +310,7 @@ export default function DailyCheckView({ tasks, checkins, onRecord, onRemove }: 
             </table>
           </div>
         )}
-      </section>
-    </div>
+      </div>
+    </>
   );
 }

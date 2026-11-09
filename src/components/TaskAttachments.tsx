@@ -10,10 +10,10 @@ interface Props {
   onClose: () => void;
 }
 
-const KIND_META: Record<Attachment["kind"], { icon: string; label: string }> = {
-  text: { icon: "📝", label: "内容" },
-  link: { icon: "🔗", label: "网址" },
-  file: { icon: "📄", label: "文件" },
+const KIND_META: Record<Attachment["kind"], { label: string }> = {
+  text: { label: "内容" },
+  link: { label: "网址" },
+  file: { label: "文件" },
 };
 
 export default function TaskAttachments({ task, onChange, onClose }: Props) {
@@ -112,95 +112,93 @@ export default function TaskAttachments({ task, onChange, onClose }: Props) {
   }
 
   return (
-    <div
-      className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4"
-      onClick={onClose}
-    >
-      <div
-        className="w-full max-w-lg rounded-2xl bg-white p-5 shadow-xl"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="mb-4 flex items-start justify-between gap-3">
-          <div className="min-w-0">
-            <p className="text-xs text-slate-400">任务附件</p>
-            <h3 className="truncate text-base font-semibold text-slate-800">{task.title}</h3>
+    <div className="att-overlay" onClick={onClose}>
+      <div className="glass att-panel" onClick={(e) => e.stopPropagation()}>
+        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", gap: 12, marginBottom: 14 }}>
+          <div style={{ minWidth: 0 }}>
+            <p style={{ fontSize: 10.5, color: "var(--faint)", letterSpacing: ".2em" }}>任 务 附 件</p>
+            <h3 style={{ fontSize: 15, fontWeight: 600, marginTop: 4, overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
+              {task.title}
+            </h3>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600">✕</button>
+          <button className="tact" onClick={onClose}>✕</button>
         </div>
 
         {/* 添加区 */}
-        <div className="mb-4 rounded-xl border border-slate-200 p-3">
-          <div className="mb-2 flex gap-1.5">
+        <div className="lt-form" style={{ marginBottom: 12 }}>
+          <div className="att-tabs">
             {(["text", "link", "file"] as const).map((k) => (
               <button
                 key={k}
+                className={`chip-btn${tab === k ? " on" : ""}`}
                 onClick={() => setTab(k)}
-                className={`rounded-lg px-3 py-1 text-xs font-medium ${
-                  tab === k ? "bg-indigo-600 text-white" : "bg-slate-100 text-slate-500 hover:bg-slate-200"
-                }`}
               >
-                {KIND_META[k].icon} {KIND_META[k].label}
+                {KIND_META[k].label}
               </button>
             ))}
           </div>
 
           {tab === "text" && (
-            <div className="space-y-2">
+            <>
               <input
+                className="inp"
                 value={textName}
                 onChange={(e) => setTextName(e.target.value)}
                 placeholder="标题，如：第三章习题要求"
-                className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm outline-none focus:border-indigo-400"
               />
               <textarea
+                className="inp"
+                rows={4}
+                style={{ resize: "vertical" }}
                 value={textContent}
                 onChange={(e) => setTextContent(e.target.value)}
                 placeholder="把作业要求、题目内容直接粘贴到这里…"
-                rows={4}
-                className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm outline-none focus:border-indigo-400"
               />
               <button
+                className="btn-primary small"
+                style={{ alignSelf: "flex-end" }}
                 onClick={addText}
                 disabled={!textContent.trim()}
-                className="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-40"
               >
                 保存内容
               </button>
-            </div>
+            </>
           )}
 
           {tab === "link" && (
-            <div className="space-y-2">
+            <>
               <input
+                className="inp"
                 value={linkUrl}
                 onChange={(e) => setLinkUrl(e.target.value)}
                 placeholder="网址，如：learn.tsinghua.edu.cn/…"
-                className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm outline-none focus:border-indigo-400"
               />
               <input
+                className="inp"
                 value={linkName}
                 onChange={(e) => setLinkName(e.target.value)}
                 placeholder="备注（可选），如：网络学堂作业入口"
-                className="w-full rounded-lg border border-slate-200 px-2.5 py-1.5 text-sm outline-none focus:border-indigo-400"
               />
               <button
+                className="btn-primary small"
+                style={{ alignSelf: "flex-end" }}
                 onClick={addLink}
                 disabled={!linkUrl.trim()}
-                className="rounded-lg bg-indigo-600 px-4 py-1.5 text-xs font-medium text-white hover:bg-indigo-700 disabled:opacity-40"
               >
                 保存网址
               </button>
-            </div>
+            </>
           )}
 
           {tab === "file" && (
-            <div>
+            <>
               <button
+                className="dropzone"
+                style={{ width: "100%", padding: 18, cursor: "pointer", background: "transparent" }}
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="w-full rounded-lg border-2 border-dashed border-slate-300 py-5 text-sm text-slate-500 hover:border-indigo-400 hover:text-indigo-600 disabled:opacity-50"
               >
-                {uploading ? "上传中…" : "点击选择文件（作业题目 PDF、图片等）"}
+                <span className="dz-main">{uploading ? "上传中…" : "点击选择文件（作业题目 PDF、图片等）"}</span>
               </button>
               <input
                 ref={fileInputRef}
@@ -212,50 +210,43 @@ export default function TaskAttachments({ task, onChange, onClose }: Props) {
                   e.target.value = "";
                 }}
               />
-            </div>
+            </>
           )}
         </div>
 
         {/* 附件列表 */}
         {task.attachments.length === 0 ? (
-          <p className="py-4 text-center text-xs text-slate-400">
-            还没有附件。作业内容、网址、文件都能放在这里，随任务一起保存
-          </p>
+          <p className="empty">还没有附件。作业内容、网址、文件都能放在这里</p>
         ) : (
-          <ul className="max-h-56 space-y-1.5 overflow-y-auto">
+          <div className="task-list" style={{ maxHeight: 224, overflowY: "auto" }}>
             {task.attachments.map((a) => (
-              <li key={a.id} className="rounded-lg border border-slate-100 bg-slate-50/60">
-                <div className="flex items-center gap-2 px-3 py-2">
-                  <span>{KIND_META[a.kind].icon}</span>
+              <div key={a.id} style={{ border: "1px solid var(--glass-border)", borderRadius: 10 }}>
+                <div style={{ display: "flex", alignItems: "center", gap: 8, padding: "8px 12px" }}>
                   <button
+                    className="grow"
+                    style={{
+                      background: "none", border: "none", color: "var(--text)", textAlign: "left",
+                      fontSize: 13, cursor: "pointer", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap",
+                    }}
                     onClick={() => {
                       if (a.kind === "link" && a.url) window.open(a.url, "_blank");
                       else if (a.kind === "file") openFile(a);
                       else setViewTextId(viewTextId === a.id ? null : a.id);
                     }}
-                    className="min-w-0 flex-1 truncate text-left text-sm text-slate-700 hover:text-indigo-600"
                     title={a.kind === "link" ? "打开网址" : a.kind === "file" ? "下载文件" : "查看内容"}
                   >
                     {a.name}
-                    {a.kind === "link" && <span className="ml-1 text-xs text-slate-400">↗</span>}
+                    {a.kind === "link" && <span style={{ marginLeft: 4, fontSize: 11, color: "var(--faint)" }}>↗</span>}
                   </button>
-                  <span className="text-[10px] text-slate-400">{KIND_META[a.kind].label}</span>
-                  <button
-                    onClick={() => removeAttachment(a)}
-                    className="text-slate-300 hover:text-rose-500"
-                    title="删除附件"
-                  >
-                    ✕
-                  </button>
+                  <span style={{ fontSize: 10, color: "var(--faint)", flex: "none" }}>{KIND_META[a.kind].label}</span>
+                  <button className="tact" onClick={() => removeAttachment(a)} title="删除附件">✕</button>
                 </div>
                 {a.kind === "text" && viewTextId === a.id && (
-                  <pre className="mx-3 mb-2 max-h-36 overflow-auto whitespace-pre-wrap rounded-lg bg-white p-2.5 text-xs leading-relaxed text-slate-600 ring-1 ring-slate-200">
-                    {a.text}
-                  </pre>
+                  <pre className="pretext" style={{ margin: "0 12px 10px", maxHeight: 144 }}>{a.text}</pre>
                 )}
-              </li>
+              </div>
             ))}
-          </ul>
+          </div>
         )}
       </div>
     </div>

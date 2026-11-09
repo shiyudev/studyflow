@@ -3,6 +3,7 @@
 import { useMemo, useState } from "react";
 import { detectPriority, PRIORITY_META } from "@/lib/priority";
 import { daysUntil, formatDeadline, todayKey, uid, type CheckIn, type Task, type TaskType } from "@/lib/types";
+import { subjectColor } from "./theme";
 import TaskAttachments from "./TaskAttachments";
 
 interface Props {
@@ -16,21 +17,6 @@ interface Props {
   onToggleDaily: (taskId: string, done: boolean) => void;
   onDelete: (id: string) => void;
   onUpdateTask: (task: Task) => void;
-}
-
-const SUBJECT_COLORS = [
-  "bg-blue-100 text-blue-700",
-  "bg-violet-100 text-violet-700",
-  "bg-amber-100 text-amber-700",
-  "bg-emerald-100 text-emerald-700",
-  "bg-pink-100 text-pink-700",
-  "bg-cyan-100 text-cyan-700",
-];
-
-function subjectColor(subject: string): string {
-  let h = 0;
-  for (const ch of subject) h = (h * 31 + ch.charCodeAt(0)) % 997;
-  return SUBJECT_COLORS[h % SUBJECT_COLORS.length];
 }
 
 /** 每日任务连续打卡天数（从今天往回数） */
@@ -49,21 +35,21 @@ function dailyStreak(taskId: string, checkins: CheckIn[]): number {
   return streak;
 }
 
-const TYPE_META: Record<TaskType, { title: string; hint: string; icon: string; accent: string; btnClass: string }> = {
+const TYPE_META: Record<TaskType, { title: string; hint: string }> = {
   daily: {
-    title: "每日任务",
+    title: "每 日 任 务",
     hint: "固定每天要做，一次添加天天生效，在下方打卡记录",
-    icon: "🔁",
-    accent: "text-emerald-600",
-    btnClass: "bg-emerald-600 hover:bg-emerald-700",
   },
   homework: {
-    title: "作业任务",
+    title: "作 业 任 务",
     hint: "按截止日期布置的任务，附件可挂作业内容/网址/文件",
-    icon: "📝",
-    accent: "text-indigo-600",
-    btnClass: "bg-indigo-600 hover:bg-indigo-700",
   },
+};
+
+const PR_CLASS: Record<string, string> = {
+  high: "pr-high",
+  medium: "pr-mid",
+  low: "pr-low",
 };
 
 export default function TaskList({ type, tasks, checkins, onAdd, onToggle, onToggleDaily, onDelete, onUpdateTask }: Props) {
@@ -123,82 +109,77 @@ export default function TaskList({ type, tasks, checkins, onAdd, onToggle, onTog
   }
 
   return (
-    <section className="rounded-2xl bg-white p-6 shadow-sm ring-1 ring-slate-200">
-      <div className="mb-4 flex items-center justify-between">
-        <h2 className="text-lg font-semibold text-slate-800">{meta.icon} {meta.title}</h2>
-        <span className="text-xs text-slate-400">{meta.hint}</span>
+    <div className="glass card">
+      <div className="card-head">
+        <h2>{meta.title}</h2>
+        <span className="card-hint">{meta.hint}</span>
       </div>
 
       {/* 添加表单 */}
-      <form onSubmit={submit} className="mb-2">
-        <div className="grid grid-cols-1 gap-2 sm:grid-cols-[1fr_120px_140px_110px_auto]">
-          <input
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder={isDaily ? "每天要做什么？例如：背单词30个" : "要做什么作业？例如：物理实验报告"}
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none"
-          />
-          <input
-            value={subject}
-            onChange={(e) => setSubject(e.target.value)}
-            placeholder="科目"
-            className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none"
-          />
-          {!isDaily ? (
-            <>
-              <input
-                type="date"
-                value={deadline}
-                onChange={(e) => setDeadline(e.target.value)}
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm focus:border-indigo-400 focus:outline-none"
-              />
-              <input
-                type="time"
-                value={deadlineTime}
-                onChange={(e) => setDeadlineTime(e.target.value)}
-                title="截止时刻（可选，不填则只精确到日）"
-                className="rounded-lg border border-slate-300 px-3 py-2 text-sm text-slate-700 focus:border-indigo-400 focus:outline-none"
-              />
-            </>
-          ) : (
-            <div className="col-span-2 flex items-center rounded-lg bg-emerald-50 px-3 text-xs text-emerald-600">
-              ⏰ 每天生效，无需设截止日期
-            </div>
-          )}
-          <button
-            type="submit"
-            className={`rounded-lg px-5 py-2 text-sm font-semibold text-white ${meta.btnClass}`}
-          >
-            添加
-          </button>
-        </div>
+      <form onSubmit={submit} className="add-row" style={{ marginBottom: previewPriority ? 6 : 12 }}>
+        <input
+          className="inp grow"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          placeholder={isDaily ? "每天要做什么？例如：背单词 30 个" : "要做什么作业？例如：物理实验报告"}
+        />
+        <input
+          className="inp"
+          style={{ width: 100 }}
+          value={subject}
+          onChange={(e) => setSubject(e.target.value)}
+          placeholder="科目"
+        />
+        {!isDaily && (
+          <>
+            <input
+              type="date"
+              className="inp"
+              style={{ width: 130 }}
+              value={deadline}
+              onChange={(e) => setDeadline(e.target.value)}
+            />
+            <input
+              type="time"
+              className="inp"
+              style={{ width: 100 }}
+              value={deadlineTime}
+              onChange={(e) => setDeadlineTime(e.target.value)}
+              title="截止时刻（可选，不填则只精确到日）"
+            />
+          </>
+        )}
+        {isDaily && (
+          <span className="mini-note" style={{ alignSelf: "center", flex: "none" }}>
+            每天生效，无需设截止日期
+          </span>
+        )}
+        <button type="submit" className="btn-primary small">添加</button>
       </form>
 
       {previewPriority && (
-        <p className="mb-3 text-xs text-slate-400">
-          🤖 智能识别：该任务优先级为
-          <span className={`ml-1 rounded-full px-2 py-0.5 font-medium ring-1 ${PRIORITY_META[previewPriority].badge}`}>
-            {PRIORITY_META[previewPriority].label}
-          </span>
+        <p className="smart-line">
+          智能识别：该任务优先级为
+          <span className={`pr-badge ${PR_CLASS[previewPriority]}`}>{PRIORITY_META[previewPriority].label}优先级</span>
         </p>
       )}
 
       {suggestion && (
-        <div className="mb-4 rounded-lg border border-indigo-200 bg-indigo-50 px-4 py-3 text-sm text-indigo-800">
-          💡 建议优先完成「{suggestion.title}」（{PRIORITY_META[suggestion.priority].label}优先级）——
-          {daysUntil(suggestion.deadline) < 0
-            ? `已逾期 ${-daysUntil(suggestion.deadline)} 天，尽快处理！`
-            : daysUntil(suggestion.deadline) === 0
-              ? `今天${suggestion.deadlineTime ? ` ${suggestion.deadlineTime} ` : ""}截止！`
-              : `距离截止还有 ${daysUntil(suggestion.deadline)} 天。`}
+        <div className="sug-strip">
+          建议优先完成 <b>「{suggestion.title}」</b>（{PRIORITY_META[suggestion.priority].label}优先级）——{" "}
+          {daysUntil(suggestion.deadline) < 0 ? (
+            <b>已逾期 {-daysUntil(suggestion.deadline)} 天，尽快处理！</b>
+          ) : daysUntil(suggestion.deadline) === 0 ? (
+            <b>今天{suggestion.deadlineTime ? ` ${suggestion.deadlineTime} ` : ""}截止！</b>
+          ) : (
+            <>距离截止还有 {daysUntil(suggestion.deadline)} 天。</>
+          )}
         </div>
       )}
 
-      <ul className="space-y-2">
+      <div className="task-list">
         {list.length === 0 && (
-          <li className="py-8 text-center text-sm text-slate-400">
-            {isDaily ? "还没有每日任务，添加一个天天坚持的事吧 🌱" : "还没有作业任务 🎯"}
-          </li>
+          <p className="empty">{isDaily ? "还没有每日任务，添加一个天天坚持的事吧" : "还没有作业任务"}</p>
         )}
 
         {isDaily &&
@@ -206,44 +187,31 @@ export default function TaskList({ type, tasks, checkins, onAdd, onToggle, onTog
             const ci = todayCheckIn(t.id);
             const doneToday = ci?.status === "done";
             const streak = dailyStreak(t.id, checkins);
+            const sc = subjectColor(t.subject);
             return (
-              <li
-                key={t.id}
-                className={`flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors ${
-                  doneToday ? "border-emerald-200 bg-emerald-50/60" : "border-slate-200 hover:border-emerald-300"
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={doneToday}
-                  onChange={() => onToggleDaily(t.id, !doneToday)}
-                  title="今天完成了吗？"
-                  className="h-4 w-4 accent-emerald-600"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className={`truncate text-sm font-medium ${doneToday ? "text-emerald-700" : "text-slate-800"}`}>
+              <div key={t.id} className={`task-item${doneToday ? " done" : ""}`}>
+                <span className="tbox" onClick={() => onToggleDaily(t.id, !doneToday)} title="今天完成了吗？">✓</span>
+                <div className="tbody">
+                  <div className="tt">
                     {t.title}
-                    {streak > 0 && <span className="ml-2 text-xs text-orange-500">🔥 连续 {streak} 天</span>}
-                  </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                    <span className={`rounded-full px-2 py-0.5 font-medium ${subjectColor(t.subject)}`}>{t.subject}</span>
-                    <span className="text-slate-400">
-                      {doneToday ? "今天已打卡 ✅" : ci?.status === "missed" ? "今天已记未做 ❌" : "今天还没打卡"}
-                    </span>
+                    {streak > 0 && <span className="tstreak"> · 连续 {streak} 天</span>}
+                  </div>
+                  <div className="tmeta">
+                    <span className="subj" style={{ color: sc, background: `${sc}24` }}>{t.subject}</span>
+                    {doneToday ? (
+                      <span className="tstatus done">今天已打卡</span>
+                    ) : ci?.status === "missed" ? (
+                      <span className="tstatus missed">今天已记未做</span>
+                    ) : (
+                      <span>今天还没打卡</span>
+                    )}
                   </div>
                 </div>
-                <button onClick={() => setAttachTaskId(t.id)} className="relative text-slate-300 hover:text-indigo-500" title="附件">
-                  📎
-                  {t.attachments.length > 0 && (
-                    <span className="absolute -right-1.5 -top-1.5 rounded-full bg-indigo-600 px-1 text-[9px] text-white">
-                      {t.attachments.length}
-                    </span>
-                  )}
+                <button className="tact" onClick={() => setAttachTaskId(t.id)} title="附件">
+                  {t.attachments.length > 0 ? `附件${t.attachments.length}` : "附件"}
                 </button>
-                <button onClick={() => onDelete(t.id)} className="text-slate-300 hover:text-rose-500" title="删除">
-                  ✕
-                </button>
-              </li>
+                <button className="tact" onClick={() => onDelete(t.id)} title="删除">✕</button>
+              </div>
             );
           })}
 
@@ -251,54 +219,34 @@ export default function TaskList({ type, tasks, checkins, onAdd, onToggle, onTog
           list.map((t) => {
             const d = daysUntil(t.deadline);
             const pmeta = PRIORITY_META[t.priority];
+            const sc = subjectColor(t.subject);
             return (
-              <li
-                key={t.id}
-                className={`flex items-center gap-3 rounded-lg border px-4 py-3 transition-colors ${
-                  t.done ? "border-slate-100 bg-slate-50" : "border-slate-200 hover:border-indigo-300"
-                }`}
-              >
-                <input
-                  type="checkbox"
-                  checked={t.done}
-                  onChange={() => onToggle(t.id)}
-                  className="h-4 w-4 accent-indigo-600"
-                />
-                <div className="min-w-0 flex-1">
-                  <p className={`truncate text-sm font-medium ${t.done ? "text-slate-400 line-through" : "text-slate-800"}`}>
-                    {t.title}
-                  </p>
-                  <div className="mt-1 flex flex-wrap items-center gap-2 text-xs">
-                    <span className={`rounded-full px-2 py-0.5 font-medium ring-1 ${pmeta.badge}`}>
-                      {pmeta.label}优先级
-                    </span>
-                    <span className={`rounded-full px-2 py-0.5 font-medium ${subjectColor(t.subject)}`}>{t.subject}</span>
-                    <span className={d <= 0 && !t.done ? "font-medium text-rose-600" : "text-slate-400"}>
-                      {t.done
-                        ? "已完成"
-                        : d < 0
-                          ? `已逾期 ${-d} 天 · ${formatDeadline(t)}`
-                          : d === 0
-                            ? `今天${t.deadlineTime ? ` ${t.deadlineTime} ` : ""}截止`
-                            : `${d} 天后截止 · ${formatDeadline(t)}`}
-                    </span>
+              <div key={t.id} className={`task-item${t.done ? " done" : ""}`}>
+                <span className="tbox" onClick={() => onToggle(t.id)}>✓</span>
+                <div className="tbody">
+                  <div className="tt">{t.title}</div>
+                  <div className="tmeta">
+                    <span className={`pr-badge ${PR_CLASS[t.priority]}`}>{pmeta.label}优先级</span>
+                    <span className="subj" style={{ color: sc, background: `${sc}24` }}>{t.subject}</span>
+                    {t.done ? (
+                      <span>已完成</span>
+                    ) : d < 0 ? (
+                      <span className="dl-warn">已逾期 {-d} 天 · {formatDeadline(t)}</span>
+                    ) : d === 0 ? (
+                      <span className="dl-warn">今天{t.deadlineTime ? ` ${t.deadlineTime} ` : ""}截止</span>
+                    ) : (
+                      <span>{d} 天后截止 · {formatDeadline(t)}</span>
+                    )}
                   </div>
                 </div>
-                <button onClick={() => setAttachTaskId(t.id)} className="relative text-slate-300 hover:text-indigo-500" title="附件">
-                  📎
-                  {t.attachments.length > 0 && (
-                    <span className="absolute -right-1.5 -top-1.5 rounded-full bg-indigo-600 px-1 text-[9px] text-white">
-                      {t.attachments.length}
-                    </span>
-                  )}
+                <button className="tact" onClick={() => setAttachTaskId(t.id)} title="附件">
+                  {t.attachments.length > 0 ? `附件${t.attachments.length}` : "附件"}
                 </button>
-                <button onClick={() => onDelete(t.id)} className="text-slate-300 hover:text-rose-500" title="删除">
-                  ✕
-                </button>
-              </li>
+                <button className="tact" onClick={() => onDelete(t.id)} title="删除">✕</button>
+              </div>
             );
           })}
-      </ul>
+      </div>
 
       {/* 附件面板 */}
       {attachTask && (
@@ -308,6 +256,6 @@ export default function TaskList({ type, tasks, checkins, onAdd, onToggle, onTog
           onClose={() => setAttachTaskId(null)}
         />
       )}
-    </section>
+    </div>
   );
 }

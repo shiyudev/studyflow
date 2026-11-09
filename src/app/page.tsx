@@ -6,24 +6,22 @@ import DailyCheckView from "@/components/DailyCheckView";
 import PlanView from "@/components/PlanView";
 import RepoView from "@/components/RepoView";
 import Sidebar, { type View } from "@/components/Sidebar";
+import Scene from "@/components/Scene";
+import AsideStats from "@/components/AsideStats";
+import { useSceneClock, greeting } from "@/hooks/useSceneClock";
 import { useAppState } from "@/lib/store";
 import { todayKey, uid, type CheckIn, type RepoFile, type Task } from "@/lib/types";
 
 const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
 
-function greeting(): string {
-  const h = new Date().getHours();
-  if (h < 6) return "夜深了";
-  if (h < 9) return "早上好";
-  if (h < 12) return "上午好";
-  if (h < 14) return "中午好";
-  if (h < 18) return "下午好";
-  return "晚上好";
+function fmtClock(min: number): string {
+  return `${String(Math.floor(min / 60) % 24).padStart(2, "0")}:${String(Math.floor(min % 60)).padStart(2, "0")}`;
 }
 
 export default function Home() {
   const [state, setState, hydrated] = useAppState();
   const [view, setView] = useState<View>("plan");
+  const clock = useSceneClock();
 
   const addTask = useCallback(
     (task: Task) => setState((s) => ({ ...s, tasks: [...s.tasks, task] })),
@@ -118,65 +116,103 @@ export default function Home() {
   );
 
   const dailyUnchecked = useMemo(() => {
+    // 预渲染阶段不得读取当前时间（Cache Components 约束），hydrated 前返回 0
+    if (!hydrated) return 0;
     const today = todayKey();
     return state.tasks.filter(
       (t) => t.type === "daily" && !state.checkins.some((c) => c.taskId === t.id && c.date === today)
     ).length;
-  }, [state.tasks, state.checkins]);
+  }, [state.tasks, state.checkins, hydrated]);
 
   if (!hydrated) {
     return (
-      <div className="flex min-h-screen items-center justify-center bg-slate-100">
-        <p className="text-slate-400">加载中…</p>
+      <div className="flex min-h-screen items-center justify-center" style={{ color: "var(--faint)" }}>
+        加载中…
       </div>
     );
   }
 
-  // 注意：必须在 hydrated 之后读取当前时间。
-  // 开启 Cache Components 后，预渲染阶段读取 new Date() 会报错。
+  // 注意：必须在 hydrated 之后读取当前时间（Cache Components 约束）。
   const now = new Date();
   const dateLabel = `${now.getMonth() + 1}月${now.getDate()}日 星期${WEEKDAYS[now.getDay()]}`;
+  const [greet, flavor] = greeting(clock.minutes);
+  const effectiveMin = clock.previewMin ?? clock.minutes;
 
   return (
-    <div className="flex min-h-screen bg-slate-100">
-      <Sidebar
-        view={view}
-        onChange={setView}
-        pendingCount={pendingCount}
-        dailyUnchecked={dailyUnchecked}
-      />
+    <>
+      <Scene />
+      <div className="app">
+        <Sidebar
+          view={view}
+          onChange={setView}
+          pendingCount={pendingCount}
+          dailyUnchecked={dailyUnchecked}
+          previewMin={clock.previewMin}
+          ff={clock.ff}
+          effectiveMin={effectiveMin}
+          setPreview={clock.setPreview}
+          toggleFF={clock.toggleFF}
+        />
 
-      <div className="min-w-0 flex-1">
-        {/* 移动端品牌栏 */}
-        <div className="flex items-center gap-2 border-b border-slate-200 bg-white px-4 py-3 md:hidden">
-          <span className="flex h-7 w-7 items-center justify-center rounded-lg bg-indigo-600 text-sm text-white">🎯</span>
-          <p className="text-sm font-bold text-slate-900">StudyFlow</p>
-        </div>
-
-        <main className="mx-auto max-w-4xl px-4 py-6 sm:px-8">
-          {/* 页头 */}
-          <header className="mb-6">
-            <h1 className="text-2xl font-bold text-slate-900">
-              {greeting()}，同学 👋
-            </h1>
-            <p className="mt-1 text-sm text-slate-500">
-              今天是 {dateLabel}
-              {pendingCount > 0 || dailyUnchecked > 0
-                ? `，${pendingCount} 个作业待完成、${dailyUnchecked} 个每日任务未打卡`
-                : "，任务已全部完成，太棒了！"}
-            </p>
+        <main className="main">
+          {/* 顶栏 */}
+          <header className="header">
+            <div>
+              <h1>{greet}</h1>
+              <p className="flavor">{flavor}</p>
+              <div className="chips">
+                {pendingCount > 0 || dailyUnchecked > 0 ? (
+                  <>
+                    今天是 {dateLabel}，<b>{pendingCount}</b> 个作业待完成、<b>{dailyUnchecked}</b> 个每日任务未打卡
+                  </>
+                ) : (
+                  <>今天是 {dateLabel}，任务已全部完成，太棒了！</>
+                )}
+              </div>
+            </div>
+            <div className="head-right">
+              <div className="clock">{fmtClock(effectiveMin)}</div>
+              <div className="phase-line">
+                <span className="phase-badge kai">
+                  {clock.isPreview ? `预览 · ${clock.phase}` : clock.phase}
+                </span>
+              </div>
+              <div className="badges">
+                <span>{clock.isPreview ? "预览中" : "跟随此刻"}</span>
+              </div>
+            </div>
           </header>
 
-          {view === "plan" && (
-            <PlanView
-              plans={state.plans}
-              onChange={(plans) => setState((s) => ({ ...s, plans }))}
-            />
-          )}
-          {view === "dailyTasks" && (
-            <div className="space-y-4">
+          <div className="views">
+            {view === "plan" && (
+              <PlanView
+                plans={state.plans}
+                onChange={(plans) => setState((s) => ({ ...s, plans }))}
+              />
+            )}
+            {view === "dailyTasks" && (
+              <>
+                <TaskList
+                  type="daily"
+                  tasks={state.tasks}
+                  checkins={state.checkins}
+                  onAdd={addTask}
+                  onToggle={toggleTask}
+                  onToggleDaily={toggleDaily}
+                  onDelete={deleteTask}
+                  onUpdateTask={updateTask}
+                />
+                <DailyCheckView
+                  tasks={state.tasks.filter((t) => t.type === "daily")}
+                  checkins={state.checkins}
+                  onRecord={recordCheckIn}
+                  onRemove={removeCheckIn}
+                />
+              </>
+            )}
+            {view === "homeworkTasks" && (
               <TaskList
-                type="daily"
+                type="homework"
                 tasks={state.tasks}
                 checkins={state.checkins}
                 onAdd={addTask}
@@ -185,29 +221,13 @@ export default function Home() {
                 onDelete={deleteTask}
                 onUpdateTask={updateTask}
               />
-              <DailyCheckView
-                tasks={state.tasks.filter((t) => t.type === "daily")}
-                checkins={state.checkins}
-                onRecord={recordCheckIn}
-                onRemove={removeCheckIn}
-              />
-            </div>
-          )}
-          {view === "homeworkTasks" && (
-            <TaskList
-              type="homework"
-              tasks={state.tasks}
-              checkins={state.checkins}
-              onAdd={addTask}
-              onToggle={toggleTask}
-              onToggleDaily={toggleDaily}
-              onDelete={deleteTask}
-              onUpdateTask={updateTask}
-            />
-          )}
-          {view === "repo" && <RepoView files={state.files} onChange={setFiles} />}
+            )}
+            {view === "repo" && <RepoView files={state.files} onChange={setFiles} />}
+          </div>
         </main>
+
+        <AsideStats tasks={state.tasks} checkins={state.checkins} phase={clock.phase} />
       </div>
-    </div>
+    </>
   );
 }

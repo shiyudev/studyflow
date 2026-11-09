@@ -3,6 +3,7 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import { deleteFileBlob, loadFileBlob, saveFileBlob } from "@/lib/fileStore";
 import { uid, type RepoFile } from "@/lib/types";
+import { fileTile, subjectColor } from "./theme";
 
 interface Props {
   files: RepoFile[];
@@ -17,21 +18,6 @@ interface UploadItem {
   path: string;
 }
 
-const SUBJECT_COLORS = [
-  "bg-blue-100 text-blue-700",
-  "bg-violet-100 text-violet-700",
-  "bg-amber-100 text-amber-700",
-  "bg-emerald-100 text-emerald-700",
-  "bg-pink-100 text-pink-700",
-  "bg-cyan-100 text-cyan-700",
-];
-
-function subjectColor(subject: string): string {
-  let h = 0;
-  for (const ch of subject) h = (h * 31 + ch.charCodeAt(0)) % 997;
-  return SUBJECT_COLORS[h % SUBJECT_COLORS.length];
-}
-
 /** 科目推断：用户手填了科目就用手填的；否则文件夹上传时取顶层目录名 */
 function inferSubject(path: string, manual: string): string {
   const m = manual.trim();
@@ -39,19 +25,6 @@ function inferSubject(path: string, manual: string): string {
   const topDir = path.split("/").filter(Boolean)[0];
   if (topDir && path.includes("/")) return topDir;
   return m || "通用";
-}
-
-function fileIcon(f: RepoFile): string {
-  const ext = f.name.split(".").pop()?.toLowerCase() ?? "";
-  if (f.mimeType.startsWith("image/")) return "🖼️";
-  if (f.mimeType === "application/pdf" || ext === "pdf") return "📕";
-  if (["md", "markdown"].includes(ext)) return "📝";
-  if (["doc", "docx"].includes(ext)) return "📘";
-  if (["ppt", "pptx"].includes(ext)) return "📊";
-  if (["xls", "xlsx", "csv"].includes(ext)) return "📈";
-  if (["zip", "rar", "7z"].includes(ext)) return "🗜️";
-  if (f.mimeType.startsWith("text/") || ["txt"].includes(ext)) return "📄";
-  return "📎";
 }
 
 function formatSize(bytes: number): string {
@@ -250,44 +223,33 @@ export default function RepoView({ files, onChange }: Props) {
   const kind = active ? previewKind(active) : "none";
 
   return (
-    <div className="space-y-4">
+    <>
       {/* 上传区 */}
       <div
+        className="glass dropzone"
+        style={dragOver ? { borderColor: "var(--accent)" } : undefined}
         onDragOver={(e) => {
           e.preventDefault();
           setDragOver(true);
         }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
-        className={`rounded-2xl border-2 border-dashed p-6 text-center transition-colors ${
-          dragOver ? "border-indigo-400 bg-indigo-50" : "border-slate-300 bg-white"
-        }`}
       >
-        <p className="text-sm text-slate-500">
+        <p className="dz-main">
           把文件或整个文件夹拖到这里，或
-          <button
-            onClick={() => inputRef.current?.click()}
-            className="mx-1 font-medium text-indigo-600 hover:underline"
-          >
-            选择文件
-          </button>
+          <button onClick={() => inputRef.current?.click()}>选择文件</button>
           /
-          <button
-            onClick={() => folderInputRef.current?.click()}
-            className="mx-1 font-medium text-indigo-600 hover:underline"
-          >
-            选择文件夹
-          </button>
+          <button onClick={() => folderInputRef.current?.click()}>选择文件夹</button>
         </p>
-        <p className="mt-1 text-xs text-slate-400">
+        <p className="dz-sub">
           支持 PDF / Markdown / Word / 图片等任意文件，单个不超过 50MB；文件夹会保留目录结构，文件夹名自动作为科目
         </p>
-        <div className="mt-3 flex items-center justify-center gap-2 text-sm">
-          <span className="text-slate-400">归入科目</span>
+        <div className="dz-subject">
+          <span>归入科目</span>
           <input
+            className="inp"
             value={uploadSubject}
             onChange={(e) => setUploadSubject(e.target.value)}
-            className="w-28 rounded-lg border border-slate-200 px-2 py-1 text-sm outline-none focus:border-indigo-400"
             placeholder="通用"
           />
         </div>
@@ -326,42 +288,39 @@ export default function RepoView({ files, onChange }: Props) {
         />
       </div>
 
-      <div className="grid gap-4 lg:grid-cols-[minmax(0,5fr)_minmax(0,7fr)]">
+      <div className="repo-grid">
         {/* 文件列表 */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="glass card">
           <input
+            className="inp"
+            style={{ width: "100%", marginBottom: 12 }}
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            placeholder="🔍 搜索文件名、路径或科目…"
-            className="mb-3 w-full rounded-xl border border-slate-200 px-3 py-2 text-sm outline-none focus:border-indigo-400"
+            placeholder="搜索文件名、路径或科目…"
           />
           {filtered.length === 0 ? (
-            <p className="py-10 text-center text-sm text-slate-400">
-              {files.length === 0 ? "仓库还是空的，上传第一个文件吧 📂" : "没有匹配的文件"}
-            </p>
+            <p className="empty">{files.length === 0 ? "仓库还是空的，上传第一个文件吧" : "没有匹配的文件"}</p>
           ) : (
-            <ul className="max-h-[52vh] space-y-2 overflow-y-auto">
-              {filtered.map((f) => (
-                <li
-                  key={f.id}
-                  onClick={() => setActiveId(f.id)}
-                  className={`cursor-pointer rounded-xl border p-3 transition-colors ${
-                    activeId === f.id
-                      ? "border-indigo-300 bg-indigo-50/60"
-                      : "border-slate-100 hover:border-slate-200 hover:bg-slate-50"
-                  }`}
-                >
-                  <div className="flex items-start gap-2">
-                    <span className="text-xl leading-none">{fileIcon(f)}</span>
-                    <div className="min-w-0 flex-1">
-                      <p className="truncate text-sm font-medium text-slate-800">{f.name}</p>
-                      {f.path && f.path.includes("/") && (
-                        <p className="truncate text-[11px] text-slate-400">📁 {f.path}</p>
-                      )}
-                      <div className="mt-1 flex flex-wrap items-center gap-1.5 text-xs text-slate-400">
+            <div style={{ maxHeight: "52vh", overflowY: "auto" }}>
+              {filtered.map((f) => {
+                const ft = fileTile(f);
+                const sc = subjectColor(f.subject);
+                return (
+                  <div
+                    key={f.id}
+                    className={`file-row${activeId === f.id ? " on" : ""}`}
+                    onClick={() => setActiveId(f.id)}
+                  >
+                    <span className="ftile" style={{ background: ft.color }}>{ft.tile}</span>
+                    <div className="fbody">
+                      <div className="fname">{f.name}</div>
+                      {f.path && f.path.includes("/") && <div className="fpath">{f.path}</div>}
+                      <div className="fmeta">
                         {editingSubjectId === f.id ? (
                           <input
                             autoFocus
+                            className="inp"
+                            style={{ width: 72, padding: "2px 6px", fontSize: 10.5 }}
                             defaultValue={f.subject}
                             onClick={(e) => e.stopPropagation()}
                             onBlur={(e) => updateSubject(f.id, e.target.value)}
@@ -369,16 +328,16 @@ export default function RepoView({ files, onChange }: Props) {
                               if (e.key === "Enter") updateSubject(f.id, e.currentTarget.value);
                               if (e.key === "Escape") setEditingSubjectId(null);
                             }}
-                            className="w-20 rounded border border-indigo-300 px-1 py-0.5 text-xs outline-none"
                           />
                         ) : (
                           <button
+                            className="subj"
+                            style={{ color: sc, background: `${sc}24`, border: "none", cursor: "pointer" }}
                             onClick={(e) => {
                               e.stopPropagation();
                               setEditingSubjectId(f.id);
                             }}
                             title="点击修改科目"
-                            className={`rounded-full px-2 py-0.5 ${subjectColor(f.subject)}`}
                           >
                             {f.subject}
                           </button>
@@ -387,82 +346,68 @@ export default function RepoView({ files, onChange }: Props) {
                         <span>{new Date(f.createdAt).toLocaleDateString()}</span>
                       </div>
                     </div>
-                    <div className="flex shrink-0 gap-1">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          downloadFile(f);
-                        }}
-                        title="下载"
-                        className="rounded-lg px-1.5 py-1 text-slate-400 hover:bg-slate-100 hover:text-indigo-600"
-                      >
-                        ⬇️
-                      </button>
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          removeFile(f.id);
-                        }}
-                        title="删除"
-                        className="rounded-lg px-1.5 py-1 text-slate-400 hover:bg-rose-50 hover:text-rose-600"
-                      >
-                        🗑️
-                      </button>
-                    </div>
+                    <button
+                      className="tact"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        downloadFile(f);
+                      }}
+                      title="下载"
+                    >
+                      下载
+                    </button>
+                    <button
+                      className="tact"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        removeFile(f.id);
+                      }}
+                      title="删除"
+                    >
+                      ✕
+                    </button>
                   </div>
-                </li>
-              ))}
-            </ul>
+                );
+              })}
+            </div>
           )}
         </div>
 
         {/* 预览区 */}
-        <div className="rounded-2xl border border-slate-200 bg-white p-4">
+        <div className="glass card preview-box">
           {!active ? (
-            <div className="flex h-full min-h-48 flex-col items-center justify-center text-sm text-slate-400">
-              <span className="mb-2 text-3xl">👀</span>
-              选择左侧文件查看预览
-            </div>
+            <div className="pempty">选择左侧文件查看预览</div>
           ) : (
-            <div className="flex h-full flex-col">
-              <div className="mb-3 flex items-center justify-between gap-2 border-b border-slate-100 pb-3">
-                <p className="truncate text-sm font-medium text-slate-800">
-                  {fileIcon(active)} {active.path || active.name}
-                </p>
-                <button
-                  onClick={() => downloadFile(active)}
-                  className="shrink-0 rounded-lg bg-indigo-600 px-3 py-1.5 text-xs text-white hover:bg-indigo-700"
-                >
-                  下载
-                </button>
+            <>
+              <div className="phead">
+                <span className="pname">{active.path || active.name}</span>
+                <button className="pdl" onClick={() => downloadFile(active)}>下载</button>
               </div>
               {previewLoading ? (
-                <p className="py-10 text-center text-sm text-slate-400">加载中…</p>
+                <div className="pempty">加载中…</div>
               ) : kind === "image" && preview.url ? (
-                <div className="max-h-[52vh] overflow-auto">
+                <div style={{ flex: 1, overflow: "auto" }}>
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={preview.url} alt={active.name} className="mx-auto max-w-full rounded-lg" />
+                  <img src={preview.url} alt={active.name} style={{ maxWidth: "100%", borderRadius: 10, display: "block", margin: "0 auto" }} />
                 </div>
               ) : kind === "pdf" && preview.url ? (
-                <iframe src={preview.url} title={active.name} className="h-[52vh] w-full rounded-lg border border-slate-100" />
+                <iframe src={preview.url} title={active.name} style={{ flex: 1, width: "100%", border: "none", borderRadius: 10 }} />
               ) : kind === "text" && preview.text !== null ? (
-                <pre className="max-h-[52vh] overflow-auto whitespace-pre-wrap rounded-lg bg-slate-50 p-3 text-xs leading-relaxed text-slate-700">
-                  {preview.text}
-                </pre>
+                <pre className="pretext">{preview.text}</pre>
               ) : kind === "none" ? (
-                <div className="flex flex-col items-center py-10 text-sm text-slate-400">
-                  <span className="mb-2 text-3xl">{fileIcon(active)}</span>
+                <div className="pempty">
+                  <span className="ftile" style={{ width: 44, height: 44, fontSize: 12, background: fileTile(active).color }}>
+                    {fileTile(active).tile}
+                  </span>
                   此文件类型暂不支持在线预览，请下载后查看
                 </div>
               ) : (
-                <p className="py-10 text-center text-sm text-slate-400">
-                  文件内容不存在，可能已被浏览器清理
-                </p>
+                <div className="pempty">文件内容不存在，可能已被浏览器清理</div>
               )}
-            </div>
+            </>
           )}
         </div>
       </div>
-    </div>
+    </>
   );
 }
