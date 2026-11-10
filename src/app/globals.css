@@ -103,10 +103,13 @@ body::after { content: ''; position: fixed; inset: -60px; z-index: 0; pointer-ev
   grid-template-columns: 216px minmax(0, 1fr) 264px; gap: 26px; padding: 22px 26px }
 .side, .main, .right { display: flex; flex-direction: column; overflow-y: auto;
   scrollbar-width: thin; scrollbar-color: var(--track) transparent }
-.side::-webkit-scrollbar, .main::-webkit-scrollbar, .right::-webkit-scrollbar { width: 5px }
-.side::-webkit-scrollbar-thumb, .main::-webkit-scrollbar-thumb, .right::-webkit-scrollbar-thumb { background: var(--track); border-radius: 99px }
+.side::-webkit-scrollbar, .main::-webkit-scrollbar, .right::-webkit-scrollbar,
+.views::-webkit-scrollbar, .card-scroll::-webkit-scrollbar { width: 5px }
+.side::-webkit-scrollbar-thumb, .main::-webkit-scrollbar-thumb, .right::-webkit-scrollbar-thumb,
+.views::-webkit-scrollbar-thumb, .card-scroll::-webkit-scrollbar-thumb { background: var(--track); border-radius: 99px }
 .side { gap: 4px; padding: 6px 2px }
-.main { gap: 22px; padding-right: 6px }
+/* v1.3：主列本身不再滚动——顶栏固定，滚动发生在 .views 视图容器内 */
+.main { gap: 22px; padding-right: 6px; overflow: hidden }
 .right { gap: 22px; padding-top: 10px }
 
 /* ---------- 轻雾面板 ---------- */
@@ -171,7 +174,18 @@ body::after { content: ''; position: fixed; inset: -60px; z-index: 0; pointer-ev
 .badges > *:first-child::before { display: none }
 
 /* ---------- 视图容器 ---------- */
-.views { display: flex; flex-direction: column; gap: 22px }
+/* v1.3：视图容器占满主列剩余高度并内部滚动 */
+.views { flex: 1; min-height: 0; overflow-y: auto; display: flex; flex-direction: column; gap: 22px;
+  scrollbar-width: thin; scrollbar-color: var(--track) transparent }
+/* v1.3：计划页两列卡填满视图高度，超出部分在卡片内部滚动，而不是撑长页面 */
+.views > .grid2 { height: 100%; min-height: 0; grid-template-rows: minmax(0, 1fr) }
+.grid2 > .card { display: flex; flex-direction: column; min-height: 0; overflow: hidden }
+.card-scroll { flex: 1; min-height: 0; overflow-y: auto; padding-right: 4px;
+  scrollbar-width: thin; scrollbar-color: var(--track) transparent }
+/* v1.3：可折叠卡片的收起/展开按钮 */
+.fold-btn { font-size: 10.5px; padding: 4px 12px; border-radius: 8px; border: 1px solid var(--glass-border);
+  background: transparent; color: var(--faint); cursor: pointer; letter-spacing: .12em }
+.fold-btn:hover { color: var(--accent); border-color: var(--accent) }
 .view { display: flex; flex-direction: column; gap: 22px }
 
 /* ---------- 卡片通用 ---------- */
@@ -358,6 +372,10 @@ body::after { content: ''; position: fixed; inset: -60px; z-index: 0; pointer-ev
 @media (max-width: 1330px) {
   .grid2 { grid-template-columns: 1fr }
   .repo-grid { grid-template-columns: 1fr }
+  /* 窄屏/单列：卡片恢复自然高度，滚动回到视图容器 */
+  .views > .grid2 { height: auto; grid-template-rows: none }
+  .grid2 > .card { overflow: visible }
+  .card-scroll { overflow: visible; flex: none }
 }
 @media (max-width: 1180px) {
   .app { grid-template-columns: 200px minmax(0, 1fr) }

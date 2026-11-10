@@ -2,6 +2,7 @@
 
 import { useMemo, useState } from "react";
 import { todayKey, type CheckIn, type Task } from "@/lib/types";
+import CollapsibleCard from "./CollapsibleCard";
 
 interface Props {
   tasks: Task[]; // 仅每日任务
@@ -46,6 +47,7 @@ export function ReflectionForm({
   reasonRequired,
   reasonPlaceholder,
   submitText,
+  cancelText = "收起",
   onSubmit,
   onCancel,
 }: {
@@ -54,6 +56,8 @@ export function ReflectionForm({
   reasonRequired?: boolean;
   reasonPlaceholder: string;
   submitText: string;
+  /** 取消按钮文案（v1.3 起默认「收起」= 纯合上表单，不产生任何记录） */
+  cancelText?: string;
   onSubmit: (reason: string | undefined, duration: number | undefined) => void;
   onCancel?: () => void;
 }) {
@@ -101,7 +105,7 @@ export function ReflectionForm({
         ))}
         <span className="flex1" />
         {onCancel && (
-          <button className="ck-btn" onClick={onCancel}>跳过</button>
+          <button className="ck-btn" onClick={onCancel}>{cancelText}</button>
         )}
         <button className="ck-btn solid" onClick={submit}>{submitText}</button>
       </div>
@@ -136,14 +140,11 @@ export default function DailyCheckView({ tasks, checkins, onRecord, onRemove }: 
 
   return (
     <>
-      {/* 今日打卡 */}
-      <div className="glass card">
-        <div className="card-head">
-          <h2>今 日 打 卡</h2>
-          <span className="card-hint">
-            {todayFullLabel} · {tasks.length} 项 · 已完成 {todayDone} · 未做 {todayMissed}
-          </span>
-        </div>
+      {/* 今日打卡（可折叠） */}
+      <CollapsibleCard
+        title="今 日 打 卡"
+        hint={`${todayFullLabel} · ${tasks.length} 项 · 已完成 ${todayDone} · 未做 ${todayMissed}`}
+      >
 
         {tasks.length === 0 ? (
           <p className="empty">还没有每日任务。先在上面添加一个，比如「背单词 30 个」</p>
@@ -195,14 +196,24 @@ export default function DailyCheckView({ tasks, checkins, onRecord, onRemove }: 
                         </>
                       ) : (
                         <>
-                          <button className="ck-btn solid" onClick={() => setFormFor(`new:done:${t.id}`)}>完成</button>
-                          <button className="ck-btn" onClick={() => setFormFor(`new:missed:${t.id}`)}>没做</button>
+                          <button
+                            className="ck-btn solid"
+                            onClick={() => setFormFor(formFor === `new:done:${t.id}` ? null : `new:done:${t.id}`)}
+                          >
+                            完成
+                          </button>
+                          <button
+                            className="ck-btn"
+                            onClick={() => setFormFor(formFor === `new:missed:${t.id}` ? null : `new:missed:${t.id}`)}
+                          >
+                            没做
+                          </button>
                         </>
                       )}
                     </div>
                   </div>
 
-                  {/* 完成：可选填反思/用时 */}
+                  {/* 完成：可选填反思/用时；「收起」只是合上表单，不产生记录 */}
                   {formFor === `new:done:${t.id}` && (
                     <ReflectionForm
                       defaultReason=""
@@ -212,10 +223,7 @@ export default function DailyCheckView({ tasks, checkins, onRecord, onRemove }: 
                         onRecord(t.id, today, "done", reason, duration);
                         setFormFor(null);
                       }}
-                      onCancel={() => {
-                        onRecord(t.id, today, "done");
-                        setFormFor(null);
-                      }}
+                      onCancel={() => setFormFor(null)}
                     />
                   )}
                   {/* 没做：必须写反思，可填用时 */}
@@ -254,14 +262,14 @@ export default function DailyCheckView({ tasks, checkins, onRecord, onRemove }: 
             })}
           </div>
         )}
-      </div>
+      </CollapsibleCard>
 
-      {/* 日期记录表 */}
-      <div className="glass card">
-        <div className="card-head">
-          <h2>日 期 记 录 表</h2>
-          <span className="card-hint">最近 14 天 · ✓ 完成 · ✗ 没做（悬停看反思）· — 无记录</span>
-        </div>
+      {/* 日期记录表（可折叠，默认收起——内容长，按需展开） */}
+      <CollapsibleCard
+        title="日 期 记 录 表"
+        hint="最近 14 天 · ✓ 完成 · ✗ 没做（悬停看反思）· — 无记录"
+        defaultOpen={false}
+      >
         {tasks.length === 0 ? (
           <p className="empty">暂无记录</p>
         ) : (
@@ -310,7 +318,7 @@ export default function DailyCheckView({ tasks, checkins, onRecord, onRemove }: 
             </table>
           </div>
         )}
-      </div>
+      </CollapsibleCard>
     </>
   );
 }

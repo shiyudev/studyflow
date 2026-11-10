@@ -272,33 +272,36 @@ export default function PlanView({ plans, dayNotes, onPlansChange, onDayNotesCha
           </div>
         )}
 
-        <div className="plan-list">
-          {dailyPlans.length === 0 ? (
-            <p className="empty">
-              这一天还没有制定计划
-              {mode === "view" && (
-                <button className="chip-btn" style={{ marginLeft: 10 }} onClick={() => setMode("edit")}>
-                  去制定
-                </button>
-              )}
-            </p>
-          ) : (
-            dailyPlans.map((p) => (
-              <div key={p.id} className={`plan-item${p.done ? " done" : ""}`}>
-                <span className="pbox" onClick={() => toggleDaily(p.id)}>✓</span>
-                {p.time && <span className="ptime">{p.time}</span>}
-                <span className="pt">{p.content}</span>
-                {mode === "edit" && (
-                  <button className="pdel" onClick={() => removePlan(p.id)} title="删除">✕</button>
+        {/* v1.3：计划与记录反思在卡片内部滚动，头部/日期栏/模式切换固定 */}
+        <div className="card-scroll">
+          <div className="plan-list">
+            {dailyPlans.length === 0 ? (
+              <p className="empty">
+                这一天还没有制定计划
+                {mode === "view" && (
+                  <button className="chip-btn" style={{ marginLeft: 10 }} onClick={() => setMode("edit")}>
+                    去制定
+                  </button>
                 )}
-              </div>
-            ))
+              </p>
+            ) : (
+              dailyPlans.map((p) => (
+                <div key={p.id} className={`plan-item${p.done ? " done" : ""}`}>
+                  <span className="pbox" onClick={() => toggleDaily(p.id)}>✓</span>
+                  {p.time && <span className="ptime">{p.time}</span>}
+                  <span className="pt">{p.content}</span>
+                  {mode === "edit" && (
+                    <button className="pdel" onClick={() => removePlan(p.id)} title="删除">✕</button>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+
+          {mode === "view" && (
+            <DayNoteEditor key={date} note={dayNote} onSave={saveDayNote} />
           )}
         </div>
-
-        {mode === "view" && (
-          <DayNoteEditor key={date} note={dayNote} onSave={saveDayNote} />
-        )}
       </div>
 
       {/* ============ 长期计划 ============ */}
@@ -342,7 +345,7 @@ export default function PlanView({ plans, dayNotes, onPlansChange, onDayNotesCha
           </div>
         )}
 
-        <div>
+        <div className="card-scroll">
           {longPlans.length === 0 ? (
             <p className="empty">还没有长期计划</p>
           ) : (

@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { detectPriority, PRIORITY_META } from "@/lib/priority";
 import { daysUntil, formatDeadline, todayKey, uid, type CheckIn, type Task, type TaskType } from "@/lib/types";
 import { subjectColor } from "./theme";
+import CollapsibleCard from "./CollapsibleCard";
 import TaskAttachments from "./TaskAttachments";
 
 interface Props {
@@ -109,12 +110,9 @@ export default function TaskList({ type, tasks, checkins, onAdd, onToggle, onTog
   }
 
   return (
-    <div className="glass card">
-      <div className="card-head">
-        <h2>{meta.title}</h2>
-        <span className="card-hint">{meta.hint}</span>
-      </div>
-
+    <>
+    {/* v1.3：整卡可折叠（默认展开），内容长时一键收起 */}
+    <CollapsibleCard title={meta.title} hint={meta.hint}>
       {/* 添加表单 */}
       <form onSubmit={submit} className="add-row" style={{ marginBottom: previewPriority ? 6 : 12 }}>
         <input
@@ -248,14 +246,16 @@ export default function TaskList({ type, tasks, checkins, onAdd, onToggle, onTog
           })}
       </div>
 
-      {/* 附件面板 */}
-      {attachTask && (
-        <TaskAttachments
-          task={attachTask}
-          onChange={(updated) => onUpdateTask(updated)}
-          onClose={() => setAttachTaskId(null)}
-        />
-      )}
-    </div>
+    </CollapsibleCard>
+
+    {/* 附件面板（模态放在折叠卡外，避免收起时被卸载） */}
+    {attachTask && (
+      <TaskAttachments
+        task={attachTask}
+        onChange={(updated) => onUpdateTask(updated)}
+        onClose={() => setAttachTaskId(null)}
+      />
+    )}
+    </>
   );
 }
