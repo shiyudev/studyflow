@@ -40,4 +40,4 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 
-.deepworks-dev.log
+.deepworks-dev*.log
