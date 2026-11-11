@@ -55,8 +55,9 @@ export default function FootprintView({
     });
     dayNotes.forEach((n) => set.add(n.date));
     checkins.forEach((c) => set.add(c.date));
-    return [...set].sort().reverse();
-  }, [plans, dayNotes, checkins]);
+    // 足迹只保留已经发生的日子：未来日期（如明天的计划）不算足迹
+    return [...set].filter((d) => d <= today).sort().reverse();
+  }, [plans, dayNotes, checkins, today]);
 
   const planDone = useMemo(
     () => plans.filter((p) => p.type === "longterm" && p.done && p.completedAt),
