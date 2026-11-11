@@ -37,6 +37,54 @@ function fmtHM(ts: number): string {
   return `${String(d.getHours()).padStart(2, "0")}:${String(d.getMinutes()).padStart(2, "0")}`;
 }
 
+/** 今日描述：制定计划时写的计划日志/寄语（v1.4；失焦自动保存；key=date 保证切换日期时重置草稿） */
+function PlanNoteEditor({
+  note,
+  onSave,
+}: {
+  note?: DayNote;
+  onSave: (planNote: string) => void;
+}) {
+  const [draft, setDraft] = useState(note?.planNote ?? "");
+  const [savedAt, setSavedAt] = useState<number | null>(null);
+
+  useEffect(() => {
+    setDraft(note?.planNote ?? "");
+  }, [note?.id, note?.updatedAt]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function blur() {
+    if (draft === (note?.planNote ?? "")) return;
+    if (!draft.trim() && !note?.record && !note?.reflection) return; // 全空且原本无记录：不建行
+    onSave(draft.trim());
+    setSavedAt(Date.now());
+  }
+
+  const hint = savedAt
+    ? `已自动保存 ${fmtHM(savedAt)}`
+    : note?.planNote
+      ? `最后保存 ${fmtHM(note.updatedAt)}`
+      : "失焦自动保存";
+
+  return (
+    <div className="note-wrap" style={{ marginTop: 0, marginBottom: 14 }}>
+      <div className="note-block">
+        <div className="note-label">
+          <span>今 日 描 述</span>
+          <span className="note-saved">{hint}</span>
+        </div>
+        <textarea
+          className="inp note-ta"
+          rows={2}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onBlur={blur}
+          placeholder="写点今天的计划日志：今天的主题是什么、想达成什么状态、给自己一句话…"
+        />
+      </div>
+    </div>
+  );
+}
+
 /** 当日记录 + 今日反思（按日期绑定；失焦自动保存；key=date 保证切换日期时重置草稿） */
 function DayNoteEditor({
   note,
@@ -70,6 +118,13 @@ function DayNoteEditor({
 
   return (
     <div className="note-wrap">
+      {/* v1.4：制定时写的今日描述在查看模式只读呈现 */}
+      {note?.planNote && (
+        <div className="note-plan">
+          <span className="note-plan-label">今 日 描 述</span>
+          <p>{note.planNote}</p>
+        </div>
+      )}
       <div className="note-block">
         <div className="note-label">
           <span>当 日 记 录</span>
@@ -116,6 +171,9 @@ export default function PlanView({ plans, dayNotes, onPlansChange, onDayNotesCha
   const [ltContent, setLtContent] = useState("");
   const [editingId, setEditingId] = useState<string | null>(null);
   const [editDraft, setEditDraft] = useState<PlanItem | null>(null);
+  // v1.4：长期计划反思（哪个条目在写反思 + 草稿）
+  const [reflFor, setReflFor] = useState<string | null>(null);
+  const [reflDraft, setReflDraft] = useState("");
 
   const dailyPlans = useMemo(
     () =>
@@ -151,12 +209,12 @@ export default function PlanView({ plans, dayNotes, onPlansChange, onDayNotesCha
     onPlansChange(plans.map((p) => (p.id === id ? { ...p, done: !p.done, updatedAt: Date.now() } : p)));
   }
 
-  /* ---------- 当日记录与反思 ---------- */
+  /* ---------- 当日记录与反思（planNote 字段在记录/反思编辑时保留） ---------- */
   function saveDayNote(record: string, reflection: string) {
     const existing = dayNotes.find((n) => n.date === date);
     if (existing) {
-      if (!record && !reflection) {
-        onDayNotesChange(dayNotes.filter((n) => n.id !== existing.id)); // 清空即删除
+      if (!record && !reflection && !existing.planNote) {
+        onDayNotesChange(dayNotes.filter((n) => n.id !== existing.id)); // 全空即删除
       } else {
         onDayNotesChange(
           dayNotes.map((n) => (n.id === existing.id ? { ...n, record, reflection, updatedAt: Date.now() } : n))
@@ -164,6 +222,24 @@ export default function PlanView({ plans, dayNotes, onPlansChange, onDayNotesCha
       }
     } else {
       onDayNotesChange([...dayNotes, { id: uid(), date, record, reflection, updatedAt: Date.now() }]);
+    }
+  }
+
+  /* ---------- 今日描述（制定模式；record/reflection 字段保留） ---------- */
+  function savePlanNote(planNote: string) {
+    const existing = dayNotes.find((n) => n.date === date);
+    if (existing) {
+      if (!planNote && !existing.record && !existing.reflection) {
+        onDayNotesChange(dayNotes.filter((n) => n.id !== existing.id));
+      } else {
+        onDayNotesChange(
+          dayNotes.map((n) =>
+            n.id === existing.id ? { ...n, planNote: planNote || undefined, updatedAt: Date.now() } : n
+          )
+        );
+      }
+    } else {
+      onDayNotesChange([...dayNotes, { id: uid(), date, record: "", reflection: "", planNote, updatedAt: Date.now() }]);
     }
   }
 
@@ -202,6 +278,27 @@ export default function PlanView({ plans, dayNotes, onPlansChange, onDayNotesCha
     if (!p) return;
     if (!confirm(`确定删除${p.type === "daily" ? "这条计划" : `「${p.title}」`}吗？`)) return;
     onPlansChange(plans.filter((x) => x.id !== id));
+  }
+
+  /** v1.4：长期计划达成/取消——达成时记 completedAt（足迹按此日期归档），取消时清除 */
+  function toggleLong(p: PlanItem) {
+    onPlansChange(
+      plans.map((x) =>
+        x.id === p.id
+          ? { ...x, done: !x.done, completedAt: !x.done ? Date.now() : undefined, updatedAt: Date.now() }
+          : x
+      )
+    );
+  }
+
+  /** v1.4：保存长期计划反思（清空即移除反思） */
+  function saveLongRefl(id: string) {
+    onPlansChange(
+      plans.map((p) =>
+        p.id === id ? { ...p, reflection: reflDraft.trim() || undefined, updatedAt: Date.now() } : p
+      )
+    );
+    setReflFor(null);
   }
 
   return (
@@ -274,6 +371,10 @@ export default function PlanView({ plans, dayNotes, onPlansChange, onDayNotesCha
 
         {/* v1.3：计划与记录反思在卡片内部滚动，头部/日期栏/模式切换固定 */}
         <div className="card-scroll">
+          {/* v1.4：制定模式顶部是「今日描述」计划日志 */}
+          {mode === "edit" && (
+            <PlanNoteEditor key={`pn-${date}`} note={dayNote} onSave={savePlanNote} />
+          )}
           <div className="plan-list">
             {dailyPlans.length === 0 ? (
               <p className="empty">
@@ -385,15 +486,47 @@ export default function PlanView({ plans, dayNotes, onPlansChange, onDayNotesCha
                     )}
                     {p.content && <div className="lt-content">{p.content}</div>}
                     <div className="lt-actions">
-                      <button
-                        className="lt-done"
-                        onClick={() => onPlansChange(plans.map((x) => (x.id === p.id ? { ...x, done: !x.done, updatedAt: Date.now() } : x)))}
-                      >
+                      <button className="lt-done" onClick={() => toggleLong(p)}>
                         {p.done ? "已达成 ✓" : "达成"}
                       </button>
+                      {p.done && (
+                        <button
+                          className="lt-edit"
+                          onClick={() => {
+                            setReflFor(reflFor === p.id ? null : p.id);
+                            setReflDraft(p.reflection ?? "");
+                          }}
+                        >
+                          {p.reflection ? "编辑反思" : "写反思"}
+                        </button>
+                      )}
                       <button className="lt-edit" onClick={() => startEdit(p)}>编辑</button>
                       <button className="lt-edit" onClick={() => removePlan(p.id)} title="删除">✕</button>
                     </div>
+
+                    {/* v1.4：已达成长期计划的反思（达成感言/复盘） */}
+                    {p.done && reflFor !== p.id && p.reflection && (
+                      <div className="lt-refl">
+                        <span className="lt-refl-label">达 成 反 思</span>
+                        <p>{p.reflection}</p>
+                      </div>
+                    )}
+                    {p.done && reflFor === p.id && (
+                      <div className="lt-refl-form">
+                        <textarea
+                          className="inp"
+                          rows={3}
+                          style={{ resize: "vertical" }}
+                          value={reflDraft}
+                          onChange={(e) => setReflDraft(e.target.value)}
+                          placeholder="达成这个长期计划的过程里，什么最关键、有什么经验、下次会怎么做…"
+                        />
+                        <div style={{ display: "flex", gap: 8, justifyContent: "flex-end" }}>
+                          <button className="lt-edit" onClick={() => setReflFor(null)}>收起</button>
+                          <button className="lt-done" onClick={() => saveLongRefl(p.id)}>保存反思</button>
+                        </div>
+                      </div>
+                    )}
                   </>
                 )}
               </div>

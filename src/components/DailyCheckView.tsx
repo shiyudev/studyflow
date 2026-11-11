@@ -147,7 +147,7 @@ export default function DailyCheckView({ tasks, checkins, onRecord, onRemove }: 
       >
 
         {tasks.length === 0 ? (
-          <p className="empty">还没有每日任务。先在上面添加一个，比如「背单词 30 个」</p>
+          <p className="empty">还没有打卡任务。先在上方「打卡任务」卡里添加一个，比如「背单词 30 个」</p>
         ) : (
           <div className="ck-list">
             {tasks.map((t) => {

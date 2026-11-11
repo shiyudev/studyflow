@@ -36,6 +36,7 @@ function normalize(raw: unknown): AppState {
         date: n.date as string,
         record: typeof n.record === "string" ? n.record : "",
         reflection: typeof n.reflection === "string" ? n.reflection : "",
+        planNote: typeof n.planNote === "string" && n.planNote ? n.planNote : undefined,
         updatedAt: typeof n.updatedAt === "number" ? n.updatedAt : Date.now(),
       })),
     plans: plans
@@ -50,6 +51,8 @@ function normalize(raw: unknown): AppState {
         startDate: typeof p.startDate === "string" && p.startDate ? p.startDate : undefined,
         endDate: typeof p.endDate === "string" && p.endDate ? p.endDate : undefined,
         done: Boolean(p.done),
+        reflection: typeof p.reflection === "string" && p.reflection ? p.reflection : undefined,
+        completedAt: typeof p.completedAt === "number" ? p.completedAt : undefined,
         createdAt: typeof p.createdAt === "number" ? p.createdAt : Date.now(),
         updatedAt: typeof p.updatedAt === "number" ? p.updatedAt : Date.now(),
       })),
@@ -166,7 +169,15 @@ export function useAppState(): [AppState, React.Dispatch<React.SetStateAction<Ap
           // 首次接入：把本地数据迁移上云，界面保持本地数据不变
           await pushRemoteState(local);
         } else {
-          setState(remote);
+          // day_notes 后补建表场景：云上其他表已有数据、但当日记录表为空，
+          // 而本地有记录时，先把本地的当日记录补推上云并保留在界面，
+          // 避免「云端为准」把尚未上云的本地记录覆盖丢掉
+          let merged = remote;
+          if (remote.dayNotes.length === 0 && local.dayNotes.length > 0) {
+            merged = { ...remote, dayNotes: local.dayNotes };
+            await pushRemoteState(merged);
+          }
+          setState(merged);
         }
       }
       remoteReady.current = true;

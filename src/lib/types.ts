@@ -82,6 +82,10 @@ export interface PlanItem {
   endDate?: string;
   /** daily：完成勾选 / longterm：已达成 */
   done: boolean;
+  /** longterm：达成后写的反思（v1.4） */
+  reflection?: string;
+  /** longterm：达成时间戳；取消达成时清除（v1.4，足迹按此日期归档） */
+  completedAt?: number;
   createdAt: number;
   updatedAt: number;
 }
@@ -95,6 +99,8 @@ export interface DayNote {
   record: string;
   /** 今日反思：哪里做得好、哪里可以改进 */
   reflection: string;
+  /** 今日描述：制定计划时写的计划日志/寄语（v1.4，事前写） */
+  planNote?: string;
   updatedAt: number;
 }
 

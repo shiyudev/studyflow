@@ -226,6 +226,14 @@ body::after { content: ''; position: fixed; inset: -60px; z-index: 0; pointer-ev
 .mode-btn.on { color: var(--accent-ink); background: var(--accent); border-color: var(--accent) }
 /* 当日记录与反思（v1.2，按日期绑定） */
 .note-wrap { margin-top: 14px; border-top: 1px solid var(--track); padding-top: 12px }
+/* v1.4：今日描述/达成反思 的引文呈现（制定时写的计划日志、长期计划达成感言） */
+.note-plan { border-left: 2px solid var(--accent); padding: 2px 0 2px 12px; margin-bottom: 12px }
+.note-plan-label { font-size: 10px; letter-spacing: .22em; color: var(--accent); display: block; margin-bottom: 3px }
+.note-plan p { font-family: var(--kai); font-size: 12.5px; line-height: 1.85; color: var(--soft); white-space: pre-wrap; margin: 0 }
+.lt-refl { border-left: 2px solid var(--accent); padding: 2px 0 2px 12px; margin-top: 10px }
+.lt-refl-label { font-size: 10px; letter-spacing: .22em; color: var(--accent); display: block; margin-bottom: 3px }
+.lt-refl p { font-family: var(--kai); font-size: 12.5px; line-height: 1.85; color: var(--soft); white-space: pre-wrap; margin: 0 }
+.lt-refl-form { margin-top: 10px }
 .note-block { margin-bottom: 12px }
 .note-block:last-child { margin-bottom: 0 }
 .note-label { display: flex; justify-content: space-between; align-items: baseline;
@@ -255,6 +263,22 @@ body::after { content: ''; position: fixed; inset: -60px; z-index: 0; pointer-ev
 .lt-done { font-size: 11.5px; padding: 5px 12px; border-radius: 8px; border: 1px solid var(--glass-border);
   background: transparent; color: var(--dim); cursor: pointer }
 .lt-item.done .lt-done { background: var(--accent); border-color: var(--accent); color: var(--accent-ink) }
+
+/* ---------- 我的足迹（v1.4） ---------- */
+.fp-body { display: flex; flex-direction: column; gap: 12px }
+.fp-sec-title { font-size: 11px; letter-spacing: .18em; color: var(--faint); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: baseline }
+.fp-sec-title span { letter-spacing: 0; font-size: 11px; color: var(--accent) }
+.fp-text { font-family: var(--kai); font-size: 12.5px; line-height: 1.85; color: var(--soft); white-space: pre-wrap; margin: 0 0 8px }
+.fp-text:last-child { margin-bottom: 0 }
+.fp-ck-row { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--glass-border); margin-bottom: 5px; font-size: 12.5px }
+.fp-ck-dot { width: 20px; height: 20px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; flex: none; border: 1px solid var(--glass-border) }
+.fp-ck-dot.yes { background: var(--accent); border-color: var(--accent); color: var(--accent-ink) }
+.fp-ck-dot.no { color: var(--warm) }
+.fp-ck-task { flex: 1 }
+.fp-ck-meta { font-size: 11px; color: var(--faint) }
+.fp-lt { border: 1px solid var(--accent); border-radius: 10px; padding: 9px 12px; margin-bottom: 6px; background: rgba(255, 200, 130, .05) }
+.fp-lt:last-child { margin-bottom: 0 }
+.fp-lt-title { font-size: 13px; font-weight: 600; margin-bottom: 3px }
 .lt-edit { font-size: 11px; color: var(--faint); background: none; border: none; cursor: pointer }
 .lt-edit:hover { color: var(--text) }
 

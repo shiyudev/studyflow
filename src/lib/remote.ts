@@ -72,6 +72,8 @@ function rowToPlan(r: any): PlanItem {
     startDate: r.start_date ?? undefined,
     endDate: r.end_date ?? undefined,
     done: Boolean(r.done),
+    reflection: r.reflection ?? undefined,
+    completedAt: typeof r.completed_at === "number" ? r.completed_at : undefined,
     createdAt: Number(r.created_at) || Date.now(),
     updatedAt: Number(r.updated_at) || Date.now(),
   };
@@ -88,6 +90,8 @@ function planToRow(p: PlanItem) {
     start_date: p.startDate ?? null,
     end_date: p.endDate ?? null,
     done: p.done,
+    reflection: p.reflection ?? null,
+    completed_at: p.completedAt ?? null,
     created_at: p.createdAt,
     updated_at: p.updatedAt,
   };
@@ -99,6 +103,7 @@ function rowToDayNote(r: any): DayNote {
     date: r.date ?? "",
     record: r.record ?? "",
     reflection: r.reflection ?? "",
+    planNote: r.plan_note ?? undefined,
     updatedAt: Number(r.updated_at) || Date.now(),
   };
 }
@@ -109,6 +114,7 @@ function dayNoteToRow(n: DayNote) {
     date: n.date,
     record: n.record,
     reflection: n.reflection,
+    plan_note: n.planNote ?? null,
     updated_at: n.updatedAt,
   };
 }
@@ -231,7 +237,17 @@ async function doPushRemoteState(state: AppState): Promise<void> {
 
     const planIds = state.plans.map((p) => p.id);
     if (state.plans.length > 0) {
-      const up = await supabase.from("plans").upsert(state.plans.map(planToRow));
+      let rows: Record<string, unknown>[] = state.plans.map(planToRow);
+      let up = await supabase.from("plans").upsert(rows);
+      if (up.error && /reflection|completed_at/i.test(up.error.message)) {
+        // 旧版 plans 表缺 v1.4 新列：去掉新列降级重试（反思暂存本地，重跑 SQL 后自动恢复）
+        console.warn("[studyflow] plans 缺 v1.4 列（需重跑 docs/supabase-setup.sql），降级同步其余字段");
+        rows = state.plans.map((p) => {
+          const { reflection: _r, completed_at: _c, ...rest } = planToRow(p);
+          return rest;
+        });
+        up = await supabase.from("plans").upsert(rows);
+      }
       if (up.error) console.warn("[studyflow] plans upsert 失败：", up.error.message);
       const del = await supabase.from("plans").delete().not("id", "in", `(${planIds.join(",")})`);
       if (del.error) console.warn("[studyflow] plans delete 失败：", del.error.message);
@@ -244,7 +260,17 @@ async function doPushRemoteState(state: AppState): Promise<void> {
     try {
       const noteIds = state.dayNotes.map((n) => n.id);
       if (state.dayNotes.length > 0) {
-        const up = await supabase.from("day_notes").upsert(state.dayNotes.map(dayNoteToRow));
+        let rows: Record<string, unknown>[] = state.dayNotes.map(dayNoteToRow);
+        let up = await supabase.from("day_notes").upsert(rows);
+        if (up.error && /plan_note/i.test(up.error.message)) {
+          // 旧版 day_notes 表缺 v1.4 的 plan_note 列：降级重试
+          console.warn("[studyflow] day_notes 缺 plan_note 列（需重跑 docs/supabase-setup.sql），降级同步");
+          rows = state.dayNotes.map((n) => {
+            const { plan_note: _p, ...rest } = dayNoteToRow(n);
+            return rest;
+          });
+          up = await supabase.from("day_notes").upsert(rows);
+        }
         if (up.error) console.warn("[studyflow] day_notes upsert 失败：", up.error.message);
         const del = await supabase.from("day_notes").delete().not("id", "in", `(${noteIds.join(",")})`);
         if (del.error) console.warn("[studyflow] day_notes delete 失败：", del.error.message);

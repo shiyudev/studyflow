@@ -38,8 +38,8 @@ function dailyStreak(taskId: string, checkins: CheckIn[]): number {
 
 const TYPE_META: Record<TaskType, { title: string; hint: string }> = {
   daily: {
-    title: "每 日 任 务",
-    hint: "固定每天要做，一次添加天天生效，在下方打卡记录",
+    title: "打 卡 任 务",
+    hint: "添加后每天固定要做，一次添加天天生效，在下方打卡记录",
   },
   homework: {
     title: "作 业 任 务",

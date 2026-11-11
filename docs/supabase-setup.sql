@@ -72,6 +72,11 @@ create table if not exists day_notes (
   updated_at bigint not null default 0
 );
 
+-- 1.5 v1.4 新增列：今日描述（制定计划时写的计划日志）+ 长期计划反思与达成时间
+alter table day_notes add column if not exists plan_note text;
+alter table plans add column if not exists reflection text;
+alter table plans add column if not exists completed_at bigint;
+
 -- 2. 学习仓库文件元数据表（文件内容存 Storage）
 create table if not exists repo_files (
   id text primary key,

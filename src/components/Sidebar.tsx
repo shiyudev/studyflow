@@ -2,7 +2,7 @@
 
 import type { ReactNode } from "react";
 
-export type View = "plan" | "dailyTasks" | "homeworkTasks" | "repo";
+export type View = "plan" | "dailyTasks" | "homeworkTasks" | "repo" | "footprint";
 
 interface Props {
   view: View;
@@ -30,7 +30,7 @@ const NAV_ITEMS: { key: View; label: string; icon: ReactNode }[] = [
   },
   {
     key: "dailyTasks",
-    label: "每日任务",
+    label: "今日任务",
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M6 3h9l4 4v14H6z" /><path d="M15 3v4h4M9 12h7M9 16h7" />
@@ -43,6 +43,16 @@ const NAV_ITEMS: { key: View; label: string; icon: ReactNode }[] = [
     icon: (
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
         <path d="M12 5c-2-2-5-2-7-1v15c2-1 5-1 7 1 2-2 5-2 7-1V4c-2-1-5-1-7 1z" /><path d="M12 5v15" />
+      </svg>
+    ),
+  },
+  {
+    key: "footprint",
+    label: "我的足迹",
+    icon: (
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+        <circle cx="6" cy="6" r="2.2" /><circle cx="18" cy="18" r="2.2" />
+        <path d="M7.5 7.5c4 1 6 3 8 8" strokeDasharray="3 2.2" />
       </svg>
     ),
   },

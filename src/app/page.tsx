@@ -3,6 +3,8 @@
 import { useCallback, useMemo, useState } from "react";
 import TaskList from "@/components/TaskList";
 import DailyCheckView from "@/components/DailyCheckView";
+import PlanTasksCard from "@/components/PlanTasksCard";
+import FootprintView from "@/components/FootprintView";
 import PlanView from "@/components/PlanView";
 import RepoView from "@/components/RepoView";
 import Sidebar, { type View } from "@/components/Sidebar";
@@ -163,7 +165,7 @@ export default function Home() {
               <div className="chips">
                 {pendingCount > 0 || dailyUnchecked > 0 ? (
                   <>
-                    今天是 {dateLabel}，<b>{pendingCount}</b> 个作业待完成、<b>{dailyUnchecked}</b> 个每日任务未打卡
+                    今天是 {dateLabel}，<b>{pendingCount}</b> 个作业待完成、<b>{dailyUnchecked}</b> 个打卡任务未记录
                   </>
                 ) : (
                   <>今天是 {dateLabel}，任务已全部完成，太棒了！</>
@@ -194,6 +196,15 @@ export default function Home() {
             )}
             {view === "dailyTasks" && (
               <>
+                {/* v1.4：今日任务 = 打卡任务（每天固定）+ 计划任务（当天计划） */}
+                <PlanTasksCard
+                  plans={state.plans}
+                  onToggle={(id) => setState((s) => ({
+                    ...s,
+                    plans: s.plans.map((p) => (p.id === id ? { ...p, done: !p.done, updatedAt: Date.now() } : p)),
+                  }))}
+                  onGoPlan={() => setView("plan")}
+                />
                 <TaskList
                   type="daily"
                   tasks={state.tasks}
@@ -222,6 +233,14 @@ export default function Home() {
                 onToggleDaily={toggleDaily}
                 onDelete={deleteTask}
                 onUpdateTask={updateTask}
+              />
+            )}
+            {view === "footprint" && (
+              <FootprintView
+                plans={state.plans}
+                dayNotes={state.dayNotes}
+                checkins={state.checkins}
+                tasks={state.tasks}
               />
             )}
             {view === "repo" && <RepoView files={state.files} onChange={setFiles} />}
