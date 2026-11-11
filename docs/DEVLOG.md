@@ -21,6 +21,7 @@
 | v1.1 | 右栏精简：去掉今日打卡与近 7 天记录，只留时段诗句与印章 | [计划页](screenshots/v1.1-plan.png) |
 | v1.2 | 计划页分制定/查看双模式；每日计划按日期绑定当日记录与反思 | [查看模式](screenshots/v1.2-plan.png) · [制定模式](screenshots/v1.2-plan-edit.png) |
 | v1.3 | 计划卡片内部滚动（主列固定不滚）+ 反思表单可收起 + 卡片可折叠 | [计划页](screenshots/v1.3-plan.png) · [每日任务](screenshots/v1.3-daily.png) |
+| v1.4 | 今日任务=打卡任务+计划任务；今日描述计划日志；长期计划达成反思；我的足迹专栏 | [计划页](screenshots/v1.4-plan.png) · [今日任务](screenshots/v1.4-today.png) · [我的足迹](screenshots/v1.4-footprint.png) |
 
 ---
 
@@ -268,6 +269,29 @@
 | ![v1.3 记录表展开](screenshots/v1.3-daily-table.png) | ![v1.3 打卡表单](screenshots/v1.3-check-form.png) |
 
 **各时段**：[黎明](screenshots/v1.3-dawn.png) · [白昼](screenshots/v1.3-day.png) · [黄昏](screenshots/v1.3-dusk.png) · [夜晚](screenshots/v1.3-night.png)
+
+---
+
+## v1.4 — 今日任务双组成 · 今日描述 · 长期计划反思 · 我的足迹
+
+**动机**：实际使用进一步暴露三个需求——①"每日任务"名不副实：里面只有打卡任务，今天的计划散落在计划页；②制定计划时想写一段计划日志（今天是什么主题、想达成什么状态），事后则是记录与反思；③长期计划达成是一次里程碑，应该有地方写达成感言；④需要一个按日期归档的"日记本"，把每天的计划、反思、打卡、达成的长期计划串成时间线。
+
+**改动**：
+- **今日任务专栏重组**：导航「每日任务」更名「今日任务」，由两张卡组成——**打卡任务**（原每日任务，添加后每天固定）+ **计划任务**（当天计划，来自计划页，勾选完成与计划页实时联动，空时有「去计划页制定」引导）
+- **今日描述（计划日志）**：`DayNote` 新增 `planNote` 字段——制定模式顶部可写今日主题/寄语（失焦自动保存）；查看模式以引文样式只读呈现；与当日记录、反思共存于同一天一条记录
+- **长期计划达成反思**：`PlanItem` 新增 `reflection`（达成感言）与 `completedAt`（达成时间，取消达成时清除）；已达成条目显示「写反思/编辑反思」按钮与楷体引文呈现
+- **我的足迹专栏**（新导航）：按日期倒序的只读时间线——每天的今日描述、当日计划与完成状态、打卡记录（✓/✗ + 用时）、当日记录与反思、当天达成的长期计划（含反思）；今天与昨天默认展开，更早默认折叠；未来日期不算足迹
+- **云端同步**：`day_notes` 加 `plan_note` 列、`plans` 加 `reflection`/`completed_at` 列（`supabase-setup.sql` 幂等补列）；旧表缺新列时自动降级同步其余字段，重跑 SQL 后自动恢复全量
+
+| 计划页（今日描述只读 + 达成反思） | 制定模式（今日描述编辑框） |
+|---|---|
+| ![v1.4 计划页](screenshots/v1.4-plan.png) | ![v1.4 制定模式](screenshots/v1.4-plan-edit.png) |
+
+| 今日任务（计划任务 + 打卡任务） | 我的足迹（按日期时间线） |
+|---|---|
+| ![v1.4 今日任务](screenshots/v1.4-today.png) | ![v1.4 我的足迹](screenshots/v1.4-footprint.png) |
+
+**各时段**：[黎明](screenshots/v1.4-dawn.png) · [白昼](screenshots/v1.4-day.png) · [黄昏](screenshots/v1.4-dusk.png) · [夜晚](screenshots/v1.4-night.png)
 
 ---
 
