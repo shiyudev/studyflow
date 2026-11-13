@@ -22,6 +22,7 @@
 | v1.2 | 计划页分制定/查看双模式；每日计划按日期绑定当日记录与反思 | [查看模式](screenshots/v1.2-plan.png) · [制定模式](screenshots/v1.2-plan-edit.png) |
 | v1.3 | 计划卡片内部滚动（主列固定不滚）+ 反思表单可收起 + 卡片可折叠 | [计划页](screenshots/v1.3-plan.png) · [每日任务](screenshots/v1.3-daily.png) |
 | v1.4 | 今日任务=打卡任务+计划任务；今日描述计划日志；长期计划达成反思；我的足迹专栏 | [计划页](screenshots/v1.4-plan.png) · [今日任务](screenshots/v1.4-today.png) · [我的足迹](screenshots/v1.4-footprint.png) |
+| v1.5 | 可读性修复：玻璃面板更实 + 暗时段次要文字提亮（黄昏/夜晚不再发虚） | [黄昏](screenshots/v1.5-dusk.png) · [夜晚](screenshots/v1.5-night.png) |
 
 ---
 
@@ -292,6 +293,22 @@
 | ![v1.4 今日任务](screenshots/v1.4-today.png) | ![v1.4 我的足迹](screenshots/v1.4-footprint.png) |
 
 **各时段**：[黎明](screenshots/v1.4-dawn.png) · [白昼](screenshots/v1.4-day.png) · [黄昏](screenshots/v1.4-dusk.png) · [夜晚](screenshots/v1.4-night.png)
+
+---
+
+## v1.5 — 可读性修复：全天时段文字不再发虚
+
+**动机**：实际使用发现黄昏、夜晚等时段界面文字发虚——次要文字（提示、日期、正文）对比度不足。
+
+**改动**（只动调色板数值，不改任何结构）：
+- **玻璃面板更实**：7 个关键帧的玻璃不透明度 `glassA` 从 .28~.4 统一提升到 .5~.55，文字与背后动态场景（晚霞、星空）有效隔离
+- **暗时段次要文字提亮**：`faint` 与 `dim` 两档文字色在夜晚/黎明前/日出/黄昏/入夜后五个关键帧整体提亮一档；白昼时段不变
+
+| 修复前（v1.4 黄昏） | 修复后（v1.5 黄昏） |
+|---|---|
+| ![v1.4 黄昏](screenshots/v1.4-dusk.png) | ![v1.5 黄昏](screenshots/v1.5-dusk.png) |
+
+**各时段**：[黎明](screenshots/v1.5-dawn.png) · [白昼](screenshots/v1.5-day.png) · [黄昏](screenshots/v1.5-dusk.png) · [夜晚](screenshots/v1.5-night.png)
 
 ---
 
