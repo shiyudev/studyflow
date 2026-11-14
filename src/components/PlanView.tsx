@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { todayKey, uid, type DayNote, type PlanItem } from "@/lib/types";
 
 interface Props {
@@ -48,10 +48,7 @@ function PlanNoteEditor({
   const [draft, setDraft] = useState(note?.planNote ?? "");
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
-  useEffect(() => {
-    setDraft(note?.planNote ?? "");
-  }, [note?.id, note?.updatedAt]); // eslint-disable-line react-hooks/exhaustive-deps
-
+  // 由父组件 key=`pn-${date}` 在切换日期时重挂载并重置草稿；编辑中不被外部同步打断
   function blur() {
     if (draft === (note?.planNote ?? "")) return;
     if (!draft.trim() && !note?.record && !note?.reflection) return; // 全空且原本无记录：不建行
@@ -97,12 +94,7 @@ function DayNoteEditor({
   const [reflection, setReflection] = useState(note?.reflection ?? "");
   const [savedAt, setSavedAt] = useState<number | null>(null);
 
-  // 云端同步等外部原因导致 note 更新时，草稿跟随重置（key=date 只覆盖切日期场景）
-  useEffect(() => {
-    setRecord(note?.record ?? "");
-    setReflection(note?.reflection ?? "");
-  }, [note?.id, note?.updatedAt]); // eslint-disable-line react-hooks/exhaustive-deps
-
+  // 由父组件 key={date} 在切换日期时重挂载并重置草稿；编辑中不被外部同步打断
   function blur() {
     if (record === (note?.record ?? "") && reflection === (note?.reflection ?? "")) return;
     if (!record.trim() && !reflection.trim() && !note) return; // 全空且原本无记录：不建行

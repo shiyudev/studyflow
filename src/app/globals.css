@@ -10,7 +10,7 @@
   --glow: rgba(168, 186, 232, .1);
   --hill-f: rgb(18, 26, 52); --hill-n: rgb(9, 13, 30);
   --glass-bg: rgba(10, 15, 32, .3); --glass-border: rgba(255, 255, 255, .12);
-  --text: rgb(232, 235, 246); --dim: rgb(166, 174, 200); --faint: rgb(118, 128, 158);
+  --text: rgb(238, 241, 250); --dim: rgb(184, 192, 216); --faint: rgb(142, 152, 178); --soft: rgb(216, 222, 238);
   --accent: rgb(157, 180, 232); --accent-ink: rgb(8, 12, 28);
   --accent-soft: rgba(157, 180, 232, .14);
   --track: rgba(232, 235, 246, .14);
@@ -19,13 +19,16 @@
   --scrim-a: .3; --vig-a: .5;
   --sun-col: rgb(255, 236, 190); --sun-glow: rgba(255, 236, 190, .4);
   --moon-glow: rgba(205, 218, 255, .5);
-  --ts: 0 1px 24px rgba(5, 8, 20, .35);
+  --ts: 0 1px 16px rgba(5, 8, 20, .32);
 }
 html, body { height: 100% }
 body {
   font-family: -apple-system, "PingFang SC", "HarmonyOS Sans SC", "Microsoft YaHei UI", "Microsoft YaHei", "Segoe UI", system-ui, sans-serif;
   color: var(--text); background: #0a0e1c; overflow: hidden;
   font-size: 15px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
 }
 ::selection { background: var(--accent); color: var(--accent-ink) }
 [hidden] { display: none !important }

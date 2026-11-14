@@ -97,14 +97,14 @@ export default function RepoView({ files, onChange }: Props) {
 
   // 加载选中文件的预览内容
   useEffect(() => {
-    if (!active) {
-      setPreview({ url: null, text: null });
-      return;
-    }
+    if (!active) return; // 预览区由 !active 分支兜底， stale preview 不参与渲染
     let cancelled = false;
     let objectUrl: string | null = null;
-    setPreviewLoading(true);
-    setPreview({ url: null, text: null });
+    queueMicrotask(() => {
+      if (cancelled) return;
+      setPreviewLoading(true);
+      setPreview({ url: null, text: null });
+    });
 
     loadFileBlob(active.id).then(async (blob) => {
       if (cancelled) return;

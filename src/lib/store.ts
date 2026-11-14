@@ -11,7 +11,7 @@ const STORAGE_KEY = "studyflow-state-v1";
 const initialState: AppState = { tasks: [], files: [], checkins: [], plans: [], dayNotes: [] };
 
 /** 兼容旧版本数据：补默认字段、剔除废弃字段（v0.5 的 notes 编辑器数据已废弃，自动忽略） */
-function normalize(raw: unknown): AppState {
+export function normalizeAppState(raw: unknown): AppState {
   if (!raw || typeof raw !== "object") return initialState;
   const tasks = Array.isArray((raw as { tasks?: unknown }).tasks)
     ? ((raw as { tasks: unknown[] }).tasks as Partial<Task>[])
@@ -142,14 +142,15 @@ export function useAppState(): [AppState, React.Dispatch<React.SetStateAction<Ap
     let local = initialState;
     try {
       const raw = localStorage.getItem(STORAGE_KEY);
-      if (raw) {
-        local = normalize(JSON.parse(raw));
-        setState(local);
-      }
+      if (raw) local = normalizeAppState(JSON.parse(raw));
     } catch {
       // 忽略损坏数据
     }
-    setHydrated(true);
+    // 首屏先渲染 initialState，挂载后再异步套用本地缓存，避免 SSR/客户端不一致
+    queueMicrotask(() => {
+      setState(local);
+      setHydrated(true);
+    });
 
     if (!hasBackend) return;
     let cancelled = false;

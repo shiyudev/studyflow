@@ -8,30 +8,33 @@ import { useMemo } from "react";
  * 颜色全部由 useSceneClock 写入的 CSS 变量驱动，本组件无状态。
  */
 export default function Scene() {
-  // 120 颗星星：只在客户端生成一次（此组件在 hydrated 之后才渲染，无 SSR 不一致问题）
-  const stars = useMemo(
-    () =>
-      Array.from({ length: 120 }, (_, i) => {
-        const s = (Math.random() * 1.6 + 0.6).toFixed(1);
-        const c = Math.random() < 0.14 ? "#ffd9a0" : "#dfe8ff";
-        return (
-          <span
-            key={i}
-            className="star"
-            style={{
-              left: `${(Math.random() * 100).toFixed(2)}vw`,
-              top: `${(Math.random() * 74).toFixed(2)}vh`,
-              width: `${s}px`,
-              height: `${s}px`,
-              background: c,
-              animationDuration: `${(3 + Math.random() * 4.5).toFixed(1)}s`,
-              animationDelay: `${(-Math.random() * 7).toFixed(1)}s`,
-            }}
-          />
-        );
-      }),
-    []
-  );
+  // 120 颗星星：用确定性伪随机生成，避免渲染期调用 Math.random
+  const stars = useMemo(() => {
+    const rand = (seed: number) => {
+      const x = Math.sin(seed * 127.1) * 43758.5453;
+      return x - Math.floor(x);
+    };
+    return Array.from({ length: 120 }, (_, i) => {
+      const seed = i + 1;
+      const s = (rand(seed) * 1.6 + 0.6).toFixed(1);
+      const c = rand(seed * 7) < 0.14 ? "#ffd9a0" : "#dfe8ff";
+      return (
+        <span
+          key={i}
+          className="star"
+          style={{
+            left: `${(rand(seed * 11) * 100).toFixed(2)}vw`,
+            top: `${(rand(seed * 13) * 74).toFixed(2)}vh`,
+            width: `${s}px`,
+            height: `${s}px`,
+            background: c,
+            animationDuration: `${(3 + rand(seed * 17) * 4.5).toFixed(1)}s`,
+            animationDelay: `${(-rand(seed * 19) * 7).toFixed(1)}s`,
+          }}
+        />
+      );
+    });
+  }, []);
 
   return (
     <>

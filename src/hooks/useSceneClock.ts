@@ -29,7 +29,8 @@ const PAL: Record<string, PalFrame> = {
 
 const KEYS: [number, PalFrame][] = [
   [0, PAL.night], [270, PAL.pre], [330, PAL.dawn], [420, PAL.morning],
-  [690, PAL.day], [1080, PAL.dusk], [1155, PAL.post], [1440, PAL.night],
+  // 白昼高对比保持到 16:00；14:30 不再落在 day→dusk 的“中灰过渡区”
+  [690, PAL.day], [960, PAL.day], [1080, PAL.dusk], [1155, PAL.post], [1440, PAL.night],
 ];
 const sm = (t: number) => t * t * (3 - 2 * t);
 const mix = (a: unknown, b: unknown, t: number): unknown =>

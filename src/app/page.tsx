@@ -11,7 +11,7 @@ import Sidebar, { type View } from "@/components/Sidebar";
 import Scene from "@/components/Scene";
 import AsideQuote from "@/components/AsideQuote";
 import { useSceneClock, greeting } from "@/hooks/useSceneClock";
-import { useAppState } from "@/lib/store";
+import { normalizeAppState, useAppState } from "@/lib/store";
 import { todayKey, uid, type CheckIn, type RepoFile, type Task } from "@/lib/types";
 
 const WEEKDAYS = ["日", "一", "二", "三", "四", "五", "六"];
@@ -112,6 +112,60 @@ export default function Home() {
     [setState]
   );
 
+  /** v1.6：导出/导入本地备份（任务、打卡、计划、当日记录、仓库元数据；文件本体仍在 Supabase/原设备） */
+  const exportBackup = useCallback(() => {
+    try {
+      const payload = {
+        app: "studyflow",
+        kind: "studyflow-backup",
+        version: 1,
+        exportedAt: new Date().toISOString(),
+        state,
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `studyflow-backup-${todayKey()}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("导出失败：浏览器没有允许下载文件。");
+    }
+  }, [state]);
+
+  const importBackup = useCallback(
+    async (file: File) => {
+      try {
+        const parsed: unknown = JSON.parse(await file.text());
+        const raw =
+          parsed && typeof parsed === "object" && "state" in parsed
+            ? (parsed as { state: unknown }).state
+            : parsed;
+        const hasAnyArray =
+          raw &&
+          typeof raw === "object" &&
+          ["tasks", "files", "checkins", "plans", "dayNotes"].some((key) =>
+            Array.isArray((raw as Record<string, unknown>)[key])
+          );
+        if (!hasAnyArray) {
+          alert("这个文件不是可识别的 StudyFlow 备份。");
+          return;
+        }
+        const next = normalizeAppState(raw);
+        const ok = confirm(
+          `导入会覆盖当前浏览器里的数据：\n任务 ${next.tasks.length}、打卡 ${next.checkins.length}、计划 ${next.plans.length}、当日记录 ${next.dayNotes.length}、仓库文件 ${next.files.length}。\n\n确定导入吗？`
+        );
+        if (!ok) return;
+        setState(next);
+        alert("导入完成。若仓库里有文件附件，文件本体仍需 Supabase 或原设备存储可用。");
+      } catch {
+        alert("备份文件读取失败：不是有效的 JSON。");
+      }
+    },
+    [setState]
+  );
+
   const pendingCount = useMemo(
     () => state.tasks.filter((t) => t.type !== "daily" && !t.done).length,
     [state.tasks]
@@ -154,6 +208,8 @@ export default function Home() {
           effectiveMin={effectiveMin}
           setPreview={clock.setPreview}
           toggleFF={clock.toggleFF}
+          onExport={exportBackup}
+          onImport={importBackup}
         />
 
         <main className="main">

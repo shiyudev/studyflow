@@ -1,6 +1,6 @@
 "use client";
 
-import type { ReactNode } from "react";
+import { useRef, type ReactNode } from "react";
 
 export type View = "plan" | "dailyTasks" | "homeworkTasks" | "repo" | "footprint";
 
@@ -16,6 +16,9 @@ interface Props {
   effectiveMin: number;
   setPreview: (v: number | null) => void;
   toggleFF: () => void;
+  /** v1.6：导出/导入本地备份 */
+  onExport: () => void;
+  onImport: (file: File) => Promise<void>;
 }
 
 const NAV_ITEMS: { key: View; label: string; icon: ReactNode }[] = [
@@ -74,7 +77,9 @@ function fmtMin(m: number): string {
 export default function Sidebar({
   view, onChange, pendingCount, dailyUnchecked,
   previewMin, ff, effectiveMin, setPreview, toggleFF,
+  onExport, onImport,
 }: Props) {
+  const importRef = useRef<HTMLInputElement>(null);
   return (
     <aside className="side">
       <div className="logo">
@@ -117,11 +122,26 @@ export default function Sidebar({
       </nav>
 
       <div className="spacer" />
-      <p className="sync-note">
+      <div className="sync-note">
         数据已云端同步（Supabase）
         <br />
         换设备打开也能看到同一份数据
-      </p>
+        <div className="pv-btns" style={{ marginTop: 8 }}>
+          <button className="mini" onClick={onExport}>导出备份</button>
+          <button className="mini" onClick={() => importRef.current?.click()}>导入备份</button>
+        </div>
+        <input
+          ref={importRef}
+          type="file"
+          accept="application/json,.json"
+          hidden
+          onChange={(e) => {
+            const f = e.target.files?.[0];
+            e.currentTarget.value = "";
+            if (f) void onImport(f);
+          }}
+        />
+      </div>
 
       <div className="mode-card glass">
         <div className="mc-title">时 间 预 览</div>

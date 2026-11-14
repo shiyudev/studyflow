@@ -243,8 +243,10 @@ async function doPushRemoteState(state: AppState): Promise<void> {
         // 旧版 plans 表缺 v1.4 新列：去掉新列降级重试（反思暂存本地，重跑 SQL 后自动恢复）
         console.warn("[studyflow] plans 缺 v1.4 列（需重跑 docs/supabase-setup.sql），降级同步其余字段");
         rows = state.plans.map((p) => {
-          const { reflection: _r, completed_at: _c, ...rest } = planToRow(p);
-          return rest;
+          const row: Record<string, unknown> = { ...planToRow(p) };
+          delete row.reflection;
+          delete row.completed_at;
+          return row;
         });
         up = await supabase.from("plans").upsert(rows);
       }
@@ -266,8 +268,9 @@ async function doPushRemoteState(state: AppState): Promise<void> {
           // 旧版 day_notes 表缺 v1.4 的 plan_note 列：降级重试
           console.warn("[studyflow] day_notes 缺 plan_note 列（需重跑 docs/supabase-setup.sql），降级同步");
           rows = state.dayNotes.map((n) => {
-            const { plan_note: _p, ...rest } = dayNoteToRow(n);
-            return rest;
+            const row: Record<string, unknown> = { ...dayNoteToRow(n) };
+            delete row.plan_note;
+            return row;
           });
           up = await supabase.from("day_notes").upsert(rows);
         }
