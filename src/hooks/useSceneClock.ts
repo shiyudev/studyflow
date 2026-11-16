@@ -148,6 +148,7 @@ export function useSceneClock(): SceneClock {
       el.setProperty("--hill-f", `rgb(${rgb(p.hillF)})`);
       el.setProperty("--hill-n", `rgb(${rgb(p.hillN)})`);
       el.setProperty("--glass-bg", `rgba(${rgb(p.glass)},${p.glassA})`);
+      el.setProperty("--glass-rgb", rgb(p.glass));
       el.setProperty("--glass-border", `rgba(255,255,255,${p.borderA})`);
       el.setProperty("--text", `rgb(${rgb(p.text)})`);
       el.setProperty("--text-rgb", rgb(p.text));

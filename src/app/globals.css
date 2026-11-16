@@ -9,7 +9,7 @@
   --sky-t: rgb(8, 11, 26); --sky-m: rgb(16, 22, 44); --sky-b: rgb(32, 40, 74);
   --glow: rgba(168, 186, 232, .1);
   --hill-f: rgb(18, 26, 52); --hill-n: rgb(9, 13, 30);
-  --glass-bg: rgba(10, 15, 32, .3); --glass-border: rgba(255, 255, 255, .12);
+  --glass-bg: rgba(10, 15, 32, .3); --glass-rgb: 10, 15, 32; --glass-border: rgba(255, 255, 255, .12);
   --text: rgb(238, 241, 250); --text-rgb: 238, 241, 250; --dim: rgb(184, 192, 216); --faint: rgb(142, 152, 178); --soft: rgb(216, 222, 238);
   --accent: rgb(157, 180, 232); --accent-ink: rgb(8, 12, 28);
   --accent-soft: rgba(157, 180, 232, .14);
@@ -196,7 +196,7 @@ body::after { content: ''; position: fixed; inset: -60px; z-index: 0; pointer-ev
 .card-head h2 { font-size: 11.5px; font-weight: 600; letter-spacing: .24em; color: var(--dim) }
 .card-hint { font-size: 11px; color: var(--faint); letter-spacing: .06em }
 .empty { padding: 26px 0; text-align: center; font-size: 12.5px; color: var(--faint); letter-spacing: .06em }
-.inp { border: 1px solid rgba(var(--text-rgb), .18); background: rgba(var(--text-rgb), .07); color: var(--text);
+.inp { border: 1px solid rgba(var(--text-rgb), .18); background: rgb(var(--glass-rgb)); color: var(--text);
   border-radius: 10px; padding: 8px 12px; font-size: 13px; outline: none; min-width: 0 }
 .inp::placeholder { color: var(--faint) }
 .inp:focus { border-color: var(--accent) }
@@ -230,12 +230,12 @@ body::after { content: ''; position: fixed; inset: -60px; z-index: 0; pointer-ev
 /* 当日记录与反思（v1.2，按日期绑定） */
 .note-wrap { margin-top: 14px; border-top: 1px solid var(--track); padding-top: 12px }
 /* v1.4：今日描述/达成反思 的引文呈现（制定时写的计划日志、长期计划达成感言） */
-.note-plan { border-left: 2px solid var(--accent); padding: 8px 12px; margin-bottom: 12px; background: rgba(var(--text-rgb), .06); border-radius: 0 10px 10px 0 }
+.note-plan { border-left: 2px solid var(--accent); padding: 8px 12px; margin-bottom: 12px; background: rgb(var(--glass-rgb)); border-radius: 0 10px 10px 0 }
 .note-plan-label { font-size: 10px; letter-spacing: .22em; color: var(--accent); display: block; margin-bottom: 3px }
-.note-plan p { font-family: var(--kai); font-size: 12.5px; line-height: 1.85; color: var(--soft); white-space: pre-wrap; margin: 0 }
-.lt-refl { border-left: 2px solid var(--accent); padding: 8px 12px; margin-top: 10px; background: rgba(var(--text-rgb), .06); border-radius: 0 10px 10px 0 }
+.note-plan p { font-family: var(--kai); font-size: 12.5px; line-height: 1.85; color: var(--text); white-space: pre-wrap; margin: 0 }
+.lt-refl { border-left: 2px solid var(--accent); padding: 8px 12px; margin-top: 10px; background: rgb(var(--glass-rgb)); border-radius: 0 10px 10px 0 }
 .lt-refl-label { font-size: 10px; letter-spacing: .22em; color: var(--accent); display: block; margin-bottom: 3px }
-.lt-refl p { font-family: var(--kai); font-size: 12.5px; line-height: 1.85; color: var(--soft); white-space: pre-wrap; margin: 0 }
+.lt-refl p { font-family: var(--kai); font-size: 12.5px; line-height: 1.85; color: var(--text); white-space: pre-wrap; margin: 0 }
 .lt-refl-form { margin-top: 10px }
 .note-block { margin-bottom: 12px }
 .note-block:last-child { margin-bottom: 0 }
@@ -271,7 +271,7 @@ body::after { content: ''; position: fixed; inset: -60px; z-index: 0; pointer-ev
 .fp-body { display: flex; flex-direction: column; gap: 12px }
 .fp-sec-title { font-size: 11px; letter-spacing: .18em; color: var(--faint); margin-bottom: 6px; display: flex; justify-content: space-between; align-items: baseline }
 .fp-sec-title span { letter-spacing: 0; font-size: 11px; color: var(--accent) }
-.fp-text { font-family: var(--kai); font-size: 12.5px; line-height: 1.85; color: var(--soft); white-space: pre-wrap; margin: 0 0 8px }
+.fp-text { font-family: var(--kai); font-size: 12.5px; line-height: 1.85; color: var(--text); white-space: pre-wrap; margin: 0 0 8px }
 .fp-text:last-child { margin-bottom: 0 }
 .fp-ck-row { display: flex; align-items: center; gap: 10px; padding: 6px 10px; border-radius: 8px; border: 1px solid var(--glass-border); margin-bottom: 5px; font-size: 12.5px }
 .fp-ck-dot { width: 20px; height: 20px; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 11px; flex: none; border: 1px solid var(--glass-border) }
@@ -330,7 +330,7 @@ body::after { content: ''; position: fixed; inset: -60px; z-index: 0; pointer-ev
 .ck-btn:hover { color: var(--text) }
 .ck-btn.solid { background: var(--accent); border-color: var(--accent); color: var(--accent-ink) }
 .reflect { margin-top: 10px; border: 1px solid var(--glass-border); border-radius: 10px; background: rgba(255, 255, 255, .04); padding: 11px }
-.reflect textarea { width: 100%; min-height: 52px; background: rgba(var(--text-rgb), .07); border: 1px solid rgba(var(--text-rgb), .18);
+.reflect textarea { width: 100%; min-height: 52px; background: rgb(var(--glass-rgb)); border: 1px solid rgba(var(--text-rgb), .18);
   border-radius: 8px; color: var(--text); font-size: 12.5px; padding: 8px 10px; outline: none; resize: vertical }
 .reflect textarea:focus { border-color: var(--accent) }
 .reflect-row { display: flex; align-items: center; gap: 6px; margin-top: 8px; flex-wrap: wrap }
