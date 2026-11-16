@@ -150,6 +150,7 @@ export function useSceneClock(): SceneClock {
       el.setProperty("--glass-bg", `rgba(${rgb(p.glass)},${p.glassA})`);
       el.setProperty("--glass-border", `rgba(255,255,255,${p.borderA})`);
       el.setProperty("--text", `rgb(${rgb(p.text)})`);
+      el.setProperty("--text-rgb", rgb(p.text));
       el.setProperty("--dim", `rgb(${rgb(p.dim)})`);
       el.setProperty("--faint", `rgb(${rgb(p.faint)})`);
       el.setProperty("--accent", `rgb(${rgb(p.accent)})`);
