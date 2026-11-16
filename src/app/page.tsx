@@ -167,6 +167,34 @@ export default function Home() {
     [setState]
   );
 
+  /** 学习搭子建议的计划 → 一键写入今日计划（按内容去重） */
+  const addBuddyPlans = useCallback(
+    (items: { content: string; time?: string }[]) => {
+      const today = todayKey();
+      setState((s) => {
+        const existing = new Set(
+          s.plans
+            .filter((p) => p.type === "daily" && p.date === today)
+            .map((p) => p.content)
+        );
+        const fresh = items
+          .filter((it) => it.content.trim() && !existing.has(it.content.trim()))
+          .map((it) => ({
+            id: uid(),
+            type: "daily" as const,
+            date: today,
+            time: it.time,
+            content: it.content.trim(),
+            done: false,
+            createdAt: Date.now(),
+            updatedAt: Date.now(),
+          }));
+        return { ...s, plans: [...s.plans, ...fresh] };
+      });
+    },
+    [setState]
+  );
+
   const pendingCount = useMemo(
     () => state.tasks.filter((t) => t.type !== "daily" && !t.done).length,
     [state.tasks]
@@ -343,7 +371,7 @@ export default function Home() {
 
         <AsideQuote phase={clock.phase} />
       </div>
-      <ChatBuddy context={buddyContext} />
+      <ChatBuddy context={buddyContext} onAddPlan={addBuddyPlans} />
     </>
   );
 }

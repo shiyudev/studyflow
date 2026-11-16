@@ -510,3 +510,30 @@ body::after { content: ''; position: fixed; inset: -60px; z-index: 0; pointer-ev
 }
 .cb-send:hover { filter: brightness(1.15) }
 .cb-send:disabled { opacity: .4; cursor: default }
+
+/* ============================================================
+   学习搭子 v2：一键添加计划卡
+   ============================================================ */
+.cb-msg-body { display: flex; flex-direction: column; gap: 6px; max-width: 82%; min-width: 0 }
+.cb-msg.user .cb-msg-body { align-items: flex-end }
+.cb-msg-body .cb-bubble { max-width: 100% }
+.cb-plan-card {
+  background: rgb(var(--glass-rgb)); border: 1px solid var(--glass-border);
+  border-radius: 14px; padding: 10px 12px;
+  display: flex; flex-direction: column; gap: 7px;
+}
+.cb-plan-title { font-size: 10.5px; letter-spacing: .18em; color: var(--faint) }
+.cb-plan-item { display: flex; align-items: baseline; gap: 8px; font-size: 12.5px; color: var(--soft) }
+.cb-plan-dot { flex: none; width: 4px; height: 4px; border-radius: 50%; background: var(--accent); align-self: center }
+.cb-plan-content { flex: 1; min-width: 0 }
+.cb-plan-time { flex: none; font-size: 11px; color: var(--faint); font-variant-numeric: tabular-nums }
+.cb-plan-add {
+  margin-top: 4px; border: 1px solid var(--glass-border); background: var(--accent-soft);
+  color: var(--accent); border-radius: 10px; padding: 7px 12px; cursor: pointer;
+  font-size: 12px; font-weight: 600; letter-spacing: .12em;
+}
+.cb-plan-add:hover { filter: brightness(1.15) }
+.cb-plan-done {
+  margin-top: 4px; font-size: 11.5px; color: var(--faint); letter-spacing: .08em;
+  text-align: center; padding: 6px 0;
+}

@@ -10,6 +10,34 @@ export interface ChatMsg {
 const LS_KEY = "studyflow-chatbuddy-v1";
 const MAX_SAVED = 40;
 
+export interface PlanSuggestion {
+  content: string;
+  time?: string;
+}
+
+const PLAN_RE = /```plan\s*\n([\s\S]*?)```/;
+
+/** 从 AI 回复里提取 ```plan JSON 代码块，解析失败返回 null */
+function parsePlans(text: string): PlanSuggestion[] | null {
+  const m = text.match(PLAN_RE);
+  if (!m) return null;
+  try {
+    const arr: unknown = JSON.parse(m[1].trim());
+    if (!Array.isArray(arr)) return null;
+    const items = (arr as PlanSuggestion[])
+      .filter((it) => it && typeof it.content === "string" && it.content.trim())
+      .map((it) => ({
+        content: it.content.trim().slice(0, 200),
+        ...(typeof it.time === "string" && /^\d{2}:\d{2}$/.test(it.time)
+          ? { time: it.time }
+          : {}),
+      }));
+    return items.length > 0 ? items : null;
+  } catch {
+    return null;
+  }
+}
+
 function loadHistory(): ChatMsg[] {
   try {
     const raw = localStorage.getItem(LS_KEY);
@@ -29,18 +57,37 @@ function loadHistory(): ChatMsg[] {
   }
 }
 
-export default function ChatBuddy({ context }: { context?: string }) {
+export default function ChatBuddy({
+  context,
+  onAddPlan,
+}: {
+  context?: string;
+  onAddPlan?: (items: PlanSuggestion[]) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<ChatMsg[] | null>(null); // null=历史还没从 localStorage 读出
   const [input, setInput] = useState("");
   const [busy, setBusy] = useState(false);
+  const [planOffers, setPlanOffers] = useState<Record<number, PlanSuggestion[]>>({});
+  const [addedAt, setAddedAt] = useState<Record<number, boolean>>({});
   const listRef = useRef<HTMLDivElement>(null);
   const taRef = useRef<HTMLTextAreaElement>(null);
   const abortRef = useRef<AbortController | null>(null);
 
   // 客户端挂载后从 localStorage 恢复聊天历史（queueMicrotask 规避 React 19 effect 内同步 setState 规则）
   useEffect(() => {
-    queueMicrotask(() => setMessages(loadHistory()));
+    queueMicrotask(() => {
+      const hist = loadHistory();
+      setMessages(hist);
+      const offers: Record<number, PlanSuggestion[]> = {};
+      hist.forEach((m, i) => {
+        if (m.role === "assistant") {
+          const p = parsePlans(m.content);
+          if (p) offers[i] = p;
+        }
+      });
+      setPlanOffers(offers);
+    });
   }, []);
 
   // 历史变化时写回 localStorage
@@ -144,6 +191,10 @@ export default function ChatBuddy({ context }: { context?: string }) {
         }
         return copy;
       });
+
+      // 回复里若带 ```plan JSON 代码块，解析出来供一键添加
+      const plans = parsePlans(acc);
+      if (plans) setPlanOffers((o) => ({ ...o, [next.length]: plans }));
     } catch (err) {
       if ((err as Error).name === "AbortError") return; // 用户点了停止，静默
       setMessages((m) => [
@@ -160,6 +211,8 @@ export default function ChatBuddy({ context }: { context?: string }) {
     abortRef.current?.abort();
     setMessages([]);
     setBusy(false);
+    setPlanOffers({});
+    setAddedAt({});
   }, []);
 
   const stop = useCallback(() => {
@@ -200,11 +253,49 @@ export default function ChatBuddy({ context }: { context?: string }) {
               </p>
             ) : (
               messages.map((m, i) => {
+                const display =
+                  m.role === "assistant"
+                    ? m.content.replace(PLAN_RE, "").trim()
+                    : m.content;
                 // 流式生成中的空占位消息不渲染
-                if (m.role === "assistant" && !m.content && busy) return null;
+                if (m.role === "assistant" && !display && busy) return null;
+                if (!display && !planOffers[i]) return null;
                 return (
                   <div key={i} className={`cb-msg ${m.role}`}>
-                    <div className="cb-bubble">{m.content}</div>
+                    <div className="cb-msg-body">
+                      {display && <div className="cb-bubble">{display}</div>}
+                      {planOffers[i] && (
+                        <div className="cb-plan-card">
+                          <div className="cb-plan-title">
+                            建议计划 · {planOffers[i].length} 条
+                          </div>
+                          {planOffers[i].map((p, j) => (
+                            <div key={j} className="cb-plan-item">
+                              <span className="cb-plan-dot" />
+                              <span className="cb-plan-content">{p.content}</span>
+                              {p.time && (
+                                <span className="cb-plan-time">{p.time}</span>
+                              )}
+                            </div>
+                          ))}
+                          {onAddPlan ? (
+                            addedAt[i] ? (
+                              <div className="cb-plan-done">已添加到今日计划</div>
+                            ) : (
+                              <button
+                                className="cb-plan-add"
+                                onClick={() => {
+                                  onAddPlan(planOffers[i]);
+                                  setAddedAt((a) => ({ ...a, [i]: true }));
+                                }}
+                              >
+                                添加到今日计划
+                              </button>
+                            )
+                          ) : null}
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })
