@@ -7,6 +7,7 @@ import PlanTasksCard from "@/components/PlanTasksCard";
 import FootprintView from "@/components/FootprintView";
 import PlanView from "@/components/PlanView";
 import RepoView from "@/components/RepoView";
+import ChatBuddy from "@/components/ChatBuddy";
 import Sidebar, { type View } from "@/components/Sidebar";
 import Scene from "@/components/Scene";
 import AsideQuote from "@/components/AsideQuote";
@@ -180,6 +181,43 @@ export default function Home() {
     ).length;
   }, [state.tasks, state.checkins, hydrated]);
 
+  /** 学习搭子上下文：把今天的学习数据概括成一段文字喂给 AI */
+  const buddyContext = useMemo(() => {
+    if (!hydrated) return "";
+    const today = todayKey();
+    const pending = state.tasks.filter((t) => t.type === "homework" && !t.done);
+    const dailyLeft = state.tasks.filter(
+      (t) =>
+        t.type === "daily" &&
+        !state.checkins.some((c) => c.taskId === t.id && c.date === today)
+    );
+    const planToday = state.plans.filter((p) => p.type === "daily" && p.date === today);
+    const note = state.dayNotes.find((n) => n.date === today);
+    const parts: string[] = [`今天是 ${today}。`];
+    if (pending.length > 0) {
+      parts.push(
+        `待完成作业：${pending
+          .map((t) => `${t.title}${t.deadline ? "（截止 " + t.deadline + "）" : ""}`)
+          .join("、")}。`
+      );
+    } else {
+      parts.push("作业已全部完成。");
+    }
+    if (dailyLeft.length > 0) {
+      parts.push(`今日打卡未完成：${dailyLeft.map((t) => t.title).join("、")}。`);
+    }
+    if (planToday.length > 0) {
+      parts.push(
+        `今日计划：${planToday
+          .map((p) => `${p.content}${p.done ? "（已完成）" : "（未完成）"}`)
+          .join("、")}。`
+      );
+    }
+    if (note?.planNote) parts.push(`今日寄语：${note.planNote}`);
+    if (note?.record) parts.push(`今日已记录：${note.record}`);
+    return parts.join("");
+  }, [state, hydrated]);
+
   if (!hydrated) {
     return (
       <div className="flex min-h-screen items-center justify-center" style={{ color: "var(--faint)" }}>
@@ -305,6 +343,7 @@ export default function Home() {
 
         <AsideQuote phase={clock.phase} />
       </div>
+      <ChatBuddy context={buddyContext} />
     </>
   );
 }
